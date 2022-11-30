@@ -1,0 +1,205 @@
+---
+title: "Simulation + Inference 1 example"
+output: rmarkdown::html_document
+---
+
+```{r, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(tibble.print_min = 4, tibble.print_max = 4)
+```
+
+```{r}
+set.seed(1234)
+library(splines)
+library(ggplot2)
+library(viridis)
+library(patchwork)
+library(hexbin)
+library(reshape2)
+library(CostOfResistance)
+library(ape)
+library(posterior)
+library(cmdstanr)
+library(bayesplot)
+library(latex2exp)
+
+run_mcmc <- F
+```
+
+## Ingest synthetic usage
+We Restrict ourselves to a 20 year span
+Load usage data and simulation script
+```{r}
+usage_df <- simulated_usage()
+source("simu_phylo.R")
+```
+## Set simulation parameters and simulate phylogenies
+```{r}
+q_u <- 1.25
+q_t <- 0.45
+
+n_tip <- 200
+
+gamma_sus <- 1/60.0*365.0
+
+gamma_res_u <- gamma_sus*q_u
+gamma_res_t <- gamma_sus*q_t
+
+t0 <- min(usage_df$time)
+tmax <- max(usage_df$time)
+sim <- sample_phylo(gamma_sus, gamma_res_u, gamma_res_t, n_tip, 123456, 1234567) 
+
+df <- sim$traj
+phys <- sim$phys
+mr <- sim$most_recent_samp
+```
+
+## Visualise \beta(t)
+```{r, out.width="100%", dpi=300, fig.align="center"}
+N_0 <- 3e6
+incidence <- 1.5e5 / N_0
+mu <- incidence+gamma_sus
+
+time_grid <- seq(from=t0, to=tmax, by=1e-4)
+t_change <- (t0 + floor(0.33*(tmax-t0)))
+
+beta_func  <- function (t) if (t < t_change) 1.02*mu else mu*(0.98 + 0.06*(t-t_change)/(tmax-t_change))
+N_func <- function(t) N_0*exp(log(2)*(t-t0)/(tmax-t0))
+usg_func <- yearly_usg_stepfunc(usage_df$usage, usage_df$time)
+
+beta_vals <- sapply(time_grid, beta_func)
+beta_df <- data.frame(time=time_grid, beta=beta_vals)
+
+usg_vals <- sapply(time_grid, usg_func)
+usg_df <- data.frame(time=time_grid, usg=usg_vals)
+
+N_vals <- sapply(time_grid, N_func)
+N_df <- data.frame(time=time_grid, N=N_vals)
+
+N_plt <- ggplot(N_df, aes(x=time, y=N))+
+    geom_line() +
+    xlim(t0,tmax) +
+    labs(y=TeX(paste0("$","N(t)","$")))+
+    theme_minimal()+
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+beta_plt <- ggplot(beta_df, aes(x=time, y=beta))+
+    geom_line()+
+    xlim(t0,tmax) +
+    labs(y=TeX(paste0("$","\\beta(t)","$")))+
+    theme_minimal()+
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+usg_plt <- ggplot(usg_df, aes(x=time, y=usg))+
+    geom_line()+
+    xlim(t0,tmax) +
+    labs(x="Time",y=TeX(paste0("$","u(t)","$")))+
+    theme_minimal()
+
+f_plt <- N_plt/beta_plt/usg_plt
+pdf("Figures/functions.pdf",4,6)
+f_plt
+dev.off()
+f_plt
+```
+
+## Visualise usage
+```{r, out.width="100%", dpi=300, fig.align="center"}
+usg_fun <- yearly_usg_stepfunc(usage_df$usage, usage_df$time)
+ggplot(data.frame(time=time_grid, usage=sapply(time_grid, usg_fun)), aes(x=time, y=usage))+geom_line()+theme_minimal()
+```
+
+```{r, out.width="100%", dpi=300, fig.align="center"}
+plot(ggplot(df, aes(x=t))+geom_line(aes(y=I_2),color="blue") +geom_line(aes(y=I_3),color="red"))
+```
+
+Preview the phylogenies run BNPR to see how that looks
+```{r, out.width="50%", dpi=300, fig.align="center"}
+plot(phys[[1]])
+axisPhylo()
+```
+```{r, out.width="50%", dpi=300, fig.align="center"}
+plot(phys[[2]])
+axisPhylo()
+```
+
+Run MCMC
+```{r,eval=run_mcmc}
+out <- infer_costs2(phys, 
+                    mr,
+                    usage_df$usage,
+                    usage_df$time,
+                    t0,
+                    tmax,
+                    gamma_sus/365,
+                    365,
+                    n_iter=2000, 
+                    n_warmup=2000,
+                    model="deterministic",
+                    K=60,
+                    L=6.5,
+                    gamma_log_sd=0.1,
+                    stan_control=list(adapt_delta=.99,
+                        max_treedepth=13,
+                        parallel_chains=4,
+                        chains=4,
+                        refresh=10
+                    ))                    
+saveRDS(out, "~/simu_rbf.rds")
+```
+
+```{r,eval=T && !run_mcmc}
+out <- readRDS("~/simu_rbf.rds")
+```
+
+```{r,eval=T}
+print(out$converged)
+```
+
+### Inferred dynamics & Rt
+```{r,eval=T, out.width="100%", dpi=300, fig.align="center"}
+source("Figures/figure1.R")
+pdf("Figures/figure1.pdf",6,6)
+plot(fig1)
+dev.off()
+fig1
+```
+
+### Pairs Plot
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+source("Figures/figure2.R")
+pdf("Figures/figure2.pdf",6,6)
+plot(fig2)
+dev.off()
+fig2
+```
+
+### Traces & ppcheck
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+s1 <- plot_traces(out)
+pdf("Figures/s1.pdf",10,10)
+plot(s1)
+dev.off()
+s1
+```
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+s2a <- plot_ppcheck_At(out,1)
+s2b <- plot_ppcheck_At(out,2)
+pdf("Figures/s2.pdf",6,6)
+plot(s2a)
+plot(s2b)
+dev.off()
+s2a
+s2b
+```
+
+### Hyppeparameter pairs
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+s3 <- plot_hyperpar_pairs(out)
+pdf("Figures/s3.pdf",6,6)
+plot(s3)
+dev.off()
+s3
+```

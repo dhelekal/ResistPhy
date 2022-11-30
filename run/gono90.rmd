@@ -1,0 +1,374 @@
+---
+title: "Ngono Cost of Resistance"
+output: rmarkdown::html_document
+---
+
+```{r, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(tibble.print_min = 4, tibble.print_max = 4)
+```
+
+```{r}
+set.seed(1) 
+library(splines)
+library(ggplot2)
+library(ggtree)
+library(reshape2)
+library(CostOfResistance)
+library(ape)
+library(posterior)
+library(cmdstanr)
+library(patchwork)
+library(viridis)
+library(RColorBrewer)
+library(latex2exp)
+
+run_mcmc <- F
+```
+## Load tree from Yonathan Grad's paper, do some boring bioinformatics stuff
+Honestly wish my computer could just read my mind and do what I want, automatically
+```{r}
+tr <- read.tree(system.file("extdata", "grad2016.nwk", package="CostOfResistance", mustWork=T))
+tr <- makeNodeLabel(tr)
+meta <- read.table(system.file("extdata", "grad2016.tab", package="CostOfResistance", mustWork=T),
+            sep='\t',comment.char='',header=T,as.is=T)
+rownames(meta) <- meta$ID
+cutoffs <- read.csv(system.file("extdata", "cutoffs.csv", package="CostOfResistance", mustWork=T))
+```
+Dichotomise Resistance data
+```{r}
+rdf <- data.frame(ID=meta$ID)
+rownames(rdf) <- rownames(meta)
+
+abx_names <- data.frame(cutoff_name = c("CFX", "CIP", "CRO", "AZI", "PEN", "TET", "SPC"),
+    meta_name=c("CFX", "CIP", "CRO", "AZI", "PEN", "TET", "SPC")
+)
+
+for (s in c(1:nrow(abx_names))) {
+    rdf[[abx_names$cutoff_name[s]]] <- (meta[[abx_names$meta_name[s]]] > cutoffs[[abx_names$cutoff_name[s]]][2])
+}
+
+rdf<-within(rdf, rm(ID))
+```
+
+Select the three lineages of interest
+```{r, out.width="100%", dpi=800, fig.align="center"}
+CL_1 <- extract.clade(tr, "Node129")$tip.label
+CL_2 <- extract.clade(tr, "Node580")$tip.label
+CL_3 <- extract.clade(tr, "Node1038")$tip.label
+
+tr_r <- keep.tip(tr, c(CL_1,CL_2,CL_3))
+
+#Remove CFX resistant subclade
+tr_r <- drop.tip(tr_r, extract.clade(tr_r, "Node732")$tip.label)
+
+tr_r <- ladderize(tr_r)
+
+p <- ggtree(tr_r) +  geom_nodelab(geom='text',size=4) +
+    theme_tree2()
+gheatmap(p, rdf, offset=8, width=0.6, 
+        colnames=FALSE, legend_title="Resistance")+
+        scale_x_ggtree()
+```
+
+We are interested in the two lineages within the subtree with root at Node125
+```{r, eval=T, out.width="70%", dpi=300, fig.align="center"}
+cl_dat <- data.frame(node=nodeid(tr_r, c("Node580", "Node129", "Node1038")), name=c("FQ Susceptible", "FQ Resistant 1","FQ Resistant 2"))
+mrsd_full <- max(meta[tr_r$tip.label, "Year"])
+
+p <- ggtree(tr_r, mrsd=paste0(mrsd_full,"-01-01")) + 
+    geom_cladelab(
+        data = cl_dat,
+        mapping = aes(
+            node = node, 
+            label = name, 
+            color = name
+        ),
+        fontsize = 3,
+        angle=90,
+        align = TRUE,
+        vjust = 0.0,
+        hjust = "center",
+        offset= 10,
+        lwd=4.0,
+        show.legend = FALSE
+    ) + 
+    scale_color_brewer(palette="Dark2") +
+    theme_tree2()
+h1 <- gheatmap(p, rdf[,c("CIP", "AZI", "PEN", "TET")], width=0.2, colnames=FALSE, legend_title="Resistance")+
+        scale_fill_manual(values=c("blue", "red")) + 
+        guides(color = "none", fill=guide_legend("MIC >= Cutoff")) +
+        scale_x_ggtree() +
+        theme(legend.position="bottom",
+        axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+
+h1
+pdf("Figures/gono_tree_90.pdf",8,8)
+plot(h1)
+dev.off()
+```
+Node580 corresponds to FQ susceptible, Node129 is FQ resistant
+Extract the two lineages, filter out tips with missing FQ profiles,or that are FQ resistant and in the susceptible clade and vice versa
+Further remove all tips that are CIP resistant (mostly a small subclade in the susceptible tree)
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+sus_tr <- extract.clade(tr_r, "Node580")
+res_tr_1 <- extract.clade(tr_r, "Node129")
+res_tr_2 <- extract.clade(tr_r, "Node1038")
+
+rdf_sus <- rdf[sus_tr$tip.label,]
+rdf_res_1 <- rdf[res_tr_1$tip.label,]
+rdf_res_2 <- rdf[res_tr_2$tip.label,]
+
+tip_times_sus <- meta[rownames(rdf_sus),]$Year
+tip_times_res_1 <- meta[rownames(rdf_res_1),]$Year
+tip_times_res_2 <- meta[rownames(rdf_res_2),]$Year
+
+mrsd_sus <- max(tip_times_sus)
+mrsd_res_1 <- max(tip_times_res_1)
+mrsd_res_2 <- max(tip_times_res_2)
+```
+Plot the filtered subtrees
+```{r, fig.show="hold", out.width="33%", eval=T}
+p1 <- ggtree(sus_tr, mrsd=paste0(mrsd_sus,"-01-01")) +
+    geom_tiplab(size=1, align=TRUE, linesize=.5)+
+    scale_x_ggtree() + 
+    theme_tree2()
+gheatmap(p1, rdf, offset=8, width=0.6, 
+    colnames=FALSE, legend_title="Resistance")+
+    scale_fill_manual(values=c("blue", "red"))+
+    labs(title="Susceptible Tree") +
+    guides(color = "none", fill=guide_legend("MIC >= Cutoff")) +
+    scale_x_ggtree()
+
+p2 <-ggtree(res_tr_1, mrsd=paste0(mrsd_res_1,"-01-01"))+theme_tree2() +
+    geom_tiplab(size=1, align=TRUE, linesize=.5)+
+    scale_x_ggtree() + 
+    theme_tree2()
+gheatmap(p2, rdf, offset=8, width=0.6, 
+        colnames=FALSE, legend_title="Resistance")+
+        scale_fill_manual(values=c("blue", "red"))+
+        labs(title="Resistant Tree") +
+        guides(color = "none", fill=guide_legend("MIC >= Cutoff")) +
+        scale_x_ggtree()
+
+p2 <-ggtree(res_tr_2, mrsd=paste0(mrsd_res_2,"-01-01"))+theme_tree2() +
+    geom_tiplab(size=1, align=TRUE, linesize=.5)+
+    scale_x_ggtree() + 
+    theme_tree2()
+gheatmap(p2, rdf, offset=8, width=0.6, 
+        colnames=FALSE, legend_title="Resistance")+
+        scale_fill_manual(values=c("blue", "red"))+
+        labs(title="Resistant Tree") +
+        guides(color = "none", fill=guide_legend("MIC >= Cutoff")) +
+        scale_x_ggtree()
+```
+
+Set the analysis end date, move tips into the middle of the year as opposed to the beginning by offsetting most recent sampling date by +0.5
+```{r, eval=T}
+t_end <- max(mrsd_res_1, mrsd_res_2, mrsd_sus)+1 
+mr_sus <- t_end-mrsd_sus-0.5
+mr_res_1 <- t_end-mrsd_res_1-0.5
+mr_res_2 <- t_end-mrsd_res_2-0.5
+
+print(t_end)
+```
+Load and preprocess usage data
+```{r}
+pl_begin <- 1988
+# AZI, PEN, TET, CEF, FQ
+dat <- system.file("extdata", "usage-clean.csv", package = "CostOfResistance", mustWork = TRUE)
+abx_raw <- as.matrix(read.csv(dat, header=F))
+abx_df <- as.data.frame(t(abx_raw))
+colnames(abx_df) <- c("year",abx_df[1,2:14])
+abx_df <- abx_df[-1,]
+rownames(abx_df) <- as.integer(abx_df[,1])
+abx_df$year <- as.integer(abx_df$year)
+abx_df$FQ <- as.numeric(abx_df[, "Ciprofloxacin"]) + as.numeric(abx_df[, "Ofloxacin"])
+abx_df$CPH <- as.numeric(abx_df[, "Cefixime"]) + as.numeric(abx_df[, "Ceftriaxone 250 mg"]) + as.numeric(abx_df[, "Ceftriaxone 125 mg"]) +as.numeric(abx_df[, "Other Cephalo."]) 
+
+abx_df$Other <- 100-as.numeric(abx_df[, "FQ"]) - 
+                as.numeric(abx_df[, "CPH"]) -
+                as.numeric(abx_df[, "Penicillins"]) -
+                as.numeric(abx_df[, "Azithromycin 2gm"]) -
+                as.numeric(abx_df[, "Tetracyclines"])
+
+usage_f_fq <- yearly_usg_stepfunc(as.numeric(abx_df[sapply(c(pl_begin:t_end), paste0),"FQ"]), c(pl_begin:t_end))
+usage_f_pen <- yearly_usg_stepfunc(as.numeric(abx_df[sapply(c(pl_begin:t_end), paste0),"Penicillins"]), c(pl_begin:t_end))
+usage_f_tet <- yearly_usg_stepfunc(as.numeric(abx_df[sapply(c(pl_begin:t_end), paste0),"Tetracyclines"]), c(pl_begin:t_end))
+usage_f_azi <- yearly_usg_stepfunc(as.numeric(abx_df[sapply(c(pl_begin:t_end), paste0),"Azithromycin 2gm"]), c(pl_begin:t_end))
+usage_f_CPH <- yearly_usg_stepfunc(as.numeric(abx_df[sapply(c(pl_begin:t_end), paste0),"CPH"]), c(pl_begin:t_end))
+usage_f_other <- yearly_usg_stepfunc(as.numeric(abx_df[sapply(c(pl_begin:t_end), paste0),"Other"]), c(pl_begin:t_end))
+
+time_grid <- seq(from=pl_begin, to=t_end, length.out=4000)
+fq_df <- data.frame(year=rep(time_grid,6), 
+                    usage=c(sapply(time_grid,usage_f_fq),
+                            sapply(time_grid,usage_f_pen),
+                            sapply(time_grid,usage_f_tet),
+                            sapply(time_grid,usage_f_azi),
+                            sapply(time_grid,usage_f_CPH),
+                            sapply(time_grid,usage_f_other)),
+                    abx=c(rep("Fluoroquinolones",length(time_grid)), 
+                          rep("Penicillins", length(time_grid)), 
+                          rep("Tetracyclines",length(time_grid)),
+                          rep("Azithromycin", length(time_grid)),
+                          rep("Cephalosporins", length(time_grid)),
+                          rep("Other", length(time_grid))))
+```
+Plot usage data, plot individual areas for AMRs that the lineages carry resistance against
+```{r, out.width="100%", eval=T}
+p <- ggplot(fq_df, aes(x=year, y=usage, fill=factor(abx, levels=rev(c("Fluoroquinolones", "Penicillins","Tetracyclines", "Cephalosporins", "Azithromycin", "Other"))))) +
+    geom_area() +
+    scale_x_continuous(breaks = seq(pl_begin, t_end, by =1)) + 
+    labs(x="Year", y="Average Usage as Proportion of Primary Treatment") +
+    guides(fill = guide_legend(title="Antimicrobial",reverse=F)) +
+    scale_fill_viridis(discrete=T) +
+    scale_y_continuous(labels = scales::percent_format(scale = 1), breaks=seq(from=0,to=100, by=10)) +
+    geom_vline(xintercept=1995, linetype="longdash", color="gray70",alpha=.8)+
+    geom_text(aes(x=1995, label="\nAnalysis Start Date", y=40), size=rel(4.0), colour="gray70", alpha=.8, angle=90)+
+    theme_minimal() +
+    theme(axis.text.x=element_text(size=rel(0.7), angle = 45, vjust=0.5, hjust=0.5),
+        axis.text.y=element_text(size=rel(0.7), hjust=1),
+        axis.title.y=element_text(size=rel(0.6)),
+        axis.title.x=element_text(size=rel(0.6)),
+        aspect.ratio=1,
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(size=rel(0.2), colour = "grey80"),
+        legend.position="right",
+        legend.justification="left",
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,-10))
+
+pl1 <- h1 + annotation_custom(
+    grob = ggplotGrob(p),
+    xmin = 1795,
+    xmax = 1995,
+    ymin = 190,
+    ymax = 410)
+
+pdf("Figures/gono_data.pdf",6,6)
+pl1
+dev.off()
+```
+We can see that PEN + TET was used in significant quantities before ~1995. The FQ resistant lineage carries resistance against these as well, but susceptible clade does not.
+Set the analysis start date to 1995. Subset FQ usage data for the given timespan.
+```{r, eval=T}
+t_begin <- 1995
+usage_df <- data.frame(year=c(t_begin:t_end), usage=as.numeric(abx_df[sapply(c(t_begin:t_end), paste0),"FQ"]))
+usage_df$usage <- usage_df$usage/100
+```
+
+## Perform Inference
+- Time scale is in years
+- Infectious period of gono is ~12 days
+```{r, eval=T}
+gamma_ansatz <- 1/90.0
+time_scale <- 365.0
+t0 <- t_begin #0
+tmax <- t_end #t_end - t_begin
+usage_df$time #<- usage_df$time - t_begin
+stopifnot(all(usage_df$time<=tmax))
+stopifnot(all(usage_df$time>=t0))
+```
+Sample
+```{r, eval=run_mcmc}
+out <- infer_costs2(list(sus_tr, res_tr_1, res_tr_2), 
+                    list(mr_sus,mr_res_1, mr_res_2),
+                    usage_df$usage,
+                    usage_df$year,
+                    t0,
+                    tmax,
+                    gamma_ansatz,
+                    time_scale,
+                    n_iter=2000, 
+                    n_warmup=2000,
+                    model="deterministic",
+                    K=60,
+                    L=6.5,
+                    seed=1345678,
+                    gamma_log_sd = 0.1,
+                    stan_control=list(adapt_delta=.99,
+                        max_treedepth=13,
+                        parallel_chains=4,
+                        chains=4,
+                        refresh=1000
+                    ))
+saveRDS(out, "~/gono_90s.rds")
+```
+Load existing analysis result
+```{r, eval=T && !run_mcmc}
+out <- readRDS("~/gono_90s.rds")
+```
+Check convergence
+```{r, eval =T}
+print(out$converged)
+```
+
+### Inferred dynamics & Rt
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+source("Figures/figure3.R")
+pdf("Figures/figure3_90.pdf",6,6)
+plot(fig3)
+dev.off()
+fig3
+```
+
+### Pairs Plot
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+fig4 <- plot_qpairs(out)
+pdf("Figures/figure4_90.pdf",6,6)
+plot(fig4)
+dev.off()
+fig4
+```
+
+### RR map
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+source("Figures/figure5.R")
+pdf("Figures/figure5_90.pdf",6,6)
+plot(fig5)
+dev.off()
+fig5
+```
+
+### Traces & ppcheck
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+s4 <- plot_traces(out)
+pdf("Figures/s4_90.pdf",12,12)
+plot(s4)
+dev.off()
+s4
+```
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+s5a <- plot_ppcheck_At(out, 1)
+s5b <- plot_ppcheck_At(out, 2)
+s5c <- plot_ppcheck_At(out, 3)
+pdf("Figures/s5_90.pdf",6,6)
+plot(s5a)
+plot(s5b)
+plot(s5c)
+dev.off()
+s5a
+s5b
+s5c
+```
+
+### Hyppeparameter pairs
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+s6 <- plot_hyperpar_pairs(out)
+pdf("Figures/s6_90.pdf",6,6)
+plot(s6)
+dev.off()
+s6
+```
+
+```{r, eval=T, out.width="100%", dpi=300, fig.align="center"}
+s7a <- plot_epi_dynamic(out,1)
+s7b <- plot_rt(out,1)
+pdf("Figures/s7_90.pdf",6,6)
+plot(s7a)
+plot(s7b)
+dev.off()
+s7a
+s7b
+```

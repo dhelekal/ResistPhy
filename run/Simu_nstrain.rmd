@@ -1,0 +1,162 @@
+---
+title: "Simulation + Inference n-strain example"
+output: rmarkdown::html_document
+---
+
+```{r, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(tibble.print_min = 4, tibble.print_max = 4)
+```
+
+```{r}
+set.seed(1234)
+library(splines)
+library(ggplot2)
+library(viridis)
+library(patchwork)
+library(hexbin)
+library(reshape2)
+library(CostOfResistance)
+library(ape)
+library(posterior)
+library(cmdstanr)
+library(bayesplot)
+library(latex2exp)
+
+run_mcmc <- F
+```
+
+## Ingest synthetic usage
+We Restrict ourselves to a 20 year span
+Load usage data and simulation script
+```{r}
+usage_df <- simulated_usage()
+```
+## Set simulation parameters and simulate phylogenies
+```{r}
+set.seed(1234)
+
+gamma_sus <- 1/60.0*365.0
+N_0 <- 3e6
+n_strains <- 6
+
+t0 <- min(usage_df$time)
+tmax <- max(usage_df$time)
+usage_f <- yearly_usg_stepfunc(usage_df$usage, usage_df$time)
+N_f <- function(t) N_0
+
+incidence <- 5e5 / N_0
+mu <- incidence+gamma_sus
+r0 <- mu/(gamma_sus)
+end_eq <- 1-1/r0
+
+beta_f <- function (t) if (t < (t0 + floor(0.5*(tmax-t0)))) 1.0*mu else 1.005*mu
+
+I_0 <- rep(0,n_strains)
+while(!all(I_0 >= 100) || !(sum(I_0) < N_0)) I_0 <- floor(end_eq*N_0*rlnorm(n_strains, c(-1,rep(-6,5)), c(0.2,rep(.4,5))))
+
+S_0 <- N_0-sum(I_0)
+
+q_u <- c(1.0, 1.0, 1.0, 1.25, 1.05, 1.1)
+q_t <- c(1.0, 1.0, 0.93, 0.45, 0.8, 0.70)  
+
+n_step <- (tmax-t0)/1e-4
+
+df <- simulate_epi_nstrain(t0, tmax, n_step, n_strains, S_0, I_0, usage_f, beta_f, N_f, q_u*gamma_sus, q_t*gamma_sus)
+```
+
+Trajectories
+```{r, out.width="100%", dpi=300, fig.align="center"}
+plt_df <- df[, c("t", paste0("I_", c(2:6)))]
+plt_df <- melt(plt_df, "t")
+ggplot(plt_df, aes(x=t, y=value, color=variable))+geom_line()
+```
+Phylogeny Simulator function
+```{r}
+sample_phy_incidence <- function(df, strain_idx, n_tips, samp_yrs, t0, tmax) {
+    I_col <- paste0("I_", strain_idx)
+    inci_col <- paste0("births_", strain_idx)
+    incidence_yr <- rev(sapply(c(t0:(tmax-1)), function(t) sum(df[which((df$t >= t) & (df$t < (t+1))), inci_col])))
+
+    n_samp <- rmultinom(1,n_tips, incidence_yr[samp_yrs]/sum(incidence_yr[samp_yrs]))
+    samp_times <- samp_yrs[which(n_samp>0)]
+    n_samp <- n_samp[which(n_samp>0)]
+    mr <- min(samp_times)
+
+    phy <- simulate_phylos_nstrain(df, strain_idx, list(samp_times), list(n_samp))
+    return(list(phy=phy,mr=mr))
+}
+```
+Run MCMC
+```{r,eval=run_mcmc}
+phy1 <- sample_phy_incidence(df, 2, 200, c(0:5), t0, tmax) 
+phy2 <- sample_phy_incidence(df, 5, 200, c(0:5), t0, tmax) 
+phy3 <- sample_phy_incidence(df, 6, 200, c(0:5), t0, tmax) 
+
+out_lna <- infer_costs2(list(phy1$phy[[1]], phy2$phy[[1]], phy3$phy[[1]]), 
+                    list(phy1$mr, phy2$mr, phy3$mr),
+                    usage_df$usage,
+                    usage_df$time,
+                    t0,
+                    tmax,
+                    gamma_sus/365.0,
+                    365,
+                    n_iter=2000, 
+                    n_warmup=2000,
+                    max_dt=1e-3,
+                    model="deterministic",
+                    K=60,
+                    L=6.5,
+                    seed=1234,
+                    gamma_log_sd=0.05,
+                    stan_control=list(adapt_delta=.99,
+                        max_treedepth=13,
+                        parallel_chains=4,
+                        chains=4,
+                        refresh=250
+                    )) 
+saveRDS(out_lna, "~/simu_lna.rds")
+
+out_ode <- infer_costs2(list(phy1$phy[[1]], phy2$phy[[1]], phy3$phy[[1]]), 
+                    list(phy1$mr, phy2$mr, phy3$mr),
+                    usage_df$usage,
+                    usage_df$time,
+                    t0,
+                    tmax,
+                    gamma_sus/365.0,
+                    365,
+                    n_iter=1000, 
+                    n_warmup=1000,
+                    max_dt=1e-3,
+                    model="deterministic",
+                    K=60,
+                    L=6.5,
+                    seed=1234,
+                    gamma_log_sd=0.05,
+                    stan_control=list(adapt_delta=.99,
+                        max_treedepth=13,
+                        parallel_chains=4,
+                        chains=4,
+                        refresh=250
+                    ))    
+
+saveRDS(out_ode, "~/simu_ode.rds")
+```
+
+LNA susceptible dynamics overlayed with ground truth trajectory
+```{r, fig.show="hold", out.width="50%", eval=T}
+plot_epi_dynamic.costsFit2(out_lna, 1) + geom_line(data=df, aes(x=t, y=I_2), color="red", lwd=1.5)
+plot_rt.costsFit2(out_lna,1) + geom_line(data=df, aes(x=t, y=Rt_2), color="red", lwd=1.5)
+```
+
+LNA resistant lineage #1 dynamics overlayed with ground truth trajectory
+```{r, fig.show="hold", out.width="50%", eval=T}
+plot_epi_dynamic.costsFit2(out_lna, 2) + geom_line(data=df, aes(x=t, y=I_5), color="red", lwd=1.5)
+plot_rt.costsFit2(out_lna,2) + geom_line(data=df, aes(x=t, y=Rt_5), color="red", lwd=1.5)
+```
+
+LNA resistant lineage #2 dynamics overlayed with ground truth trajectory
+```{r, fig.show="hold", out.width="50%", eval=T}
+plot_epi_dynamic.costsFit2(out_lna, 3) + geom_line(data=df, aes(x=t, y=I_6), color="red", lwd=1.5)
+plot_rt.costsFit2(out_lna,3) + geom_line(data=df, aes(x=t, y=Rt_6), color="red", lwd=1.5)
+```

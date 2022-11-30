@@ -1,0 +1,3 @@
+ PEN,TET, SPC,CFX,  CRO,  CIP, AZI,
+ 0.06,0.5,64 ,0.125,0.125,0.03,0.25 ,#lower  breakpoints - sensitive only if <= cutoff
+ 1   ,1  ,64 ,0.125,0.06 ,0.5 ,1    ,#higher breakpoints - resistant only if >  cutoff

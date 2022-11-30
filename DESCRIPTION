@@ -1,0 +1,16 @@
+Package: CostOfResistance
+Type: Package
+Title: Estimation of cost/benefit of AMR resistance as a function of AMR usage from dated phylogenies
+Version: 0.1.0
+Authors@R: person("David", "Helekal", email = "David.Helekal@warwick.ac.uk", role = c("aut", "cre"))
+Maintainer: David Helekal <david.helekal@gmail.com>
+Depends: R (>= 4.0.0)
+LinkingTo: Rcpp
+Imports: Rcpp, ape, stats, graphics, cmdstanr, posterior, phylodyn, ggplot2
+Suggests: knitr, testthat, rmarkdown
+Description: 
+VignetteBuilder: knitr
+License: GNU GPL-3
+RoxygenNote: 7.1.2
+Encoding: UTF-8
+LazyData: true 
