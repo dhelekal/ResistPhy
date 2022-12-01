@@ -1,4 +1,4 @@
-Package: CostOfResistance
+Package: ResistPhy
 Type: Package
 Title: Estimation of cost/benefit of AMR resistance as a function of AMR usage from dated phylogenies
 Version: 0.1.0

@@ -1,7 +1,7 @@
 library(ggplot2)
 library(reshape2)
 library(viridis)
-library(CostOfResistance)
+library(ResistPhy)
 library(ape)
 library(posterior)
 library(cmdstanr)

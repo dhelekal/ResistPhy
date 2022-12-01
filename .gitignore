@@ -38,3 +38,7 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 *.rds
+
+#C/C++ compiled files
+*.o
+*.so

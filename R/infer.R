@@ -111,12 +111,12 @@ infer_costs2 <- function(phys,
         L=L
     )
 
-    include_dir <- system.file('stan',package='CostOfResistance')
+    include_dir <- system.file('stan',package='ResistPhy')
 
     if(model=="deterministic") {
         f <- system.file('stan',    
                         'n_strain_model_v8_deterministic.stan',
-                        package='CostOfResistance',
+                        package='ResistPhy',
                         mustWork = T)
     } else {
         stop("Invalid Model Choice")
@@ -150,8 +150,7 @@ infer_costs2 <- function(phys,
                     gamma_guess, 
                     gamma_log_sd, 
                     n_iter, 
-                    n_warmup,
-                    model)
+                    n_warmup)
     return(out)
 }
 

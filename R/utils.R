@@ -25,7 +25,7 @@ yearly_usg_stepfunc <- function(usage, usage_ts) {
 simulated_usage <- function() {
     f <- system.file('extdata',    
                         'synthetic_usage.csv',
-                        package='CostOfResistance',
+                        package='ResistPhy',
                         mustWork = T)
     out <- as.data.frame(read.csv(f, header=T))
     return(out)

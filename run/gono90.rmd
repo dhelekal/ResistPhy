@@ -14,7 +14,7 @@ library(splines)
 library(ggplot2)
 library(ggtree)
 library(reshape2)
-library(CostOfResistance)
+library(ResistPhy)
 library(ape)
 library(posterior)
 library(cmdstanr)
@@ -28,12 +28,12 @@ run_mcmc <- F
 ## Load tree from Yonathan Grad's paper, do some boring bioinformatics stuff
 Honestly wish my computer could just read my mind and do what I want, automatically
 ```{r}
-tr <- read.tree(system.file("extdata", "grad2016.nwk", package="CostOfResistance", mustWork=T))
+tr <- read.tree(system.file("extdata", "grad2016.nwk", package="ResistPhy", mustWork=T))
 tr <- makeNodeLabel(tr)
-meta <- read.table(system.file("extdata", "grad2016.tab", package="CostOfResistance", mustWork=T),
+meta <- read.table(system.file("extdata", "grad2016.tab", package="ResistPhy", mustWork=T),
             sep='\t',comment.char='',header=T,as.is=T)
 rownames(meta) <- meta$ID
-cutoffs <- read.csv(system.file("extdata", "cutoffs.csv", package="CostOfResistance", mustWork=T))
+cutoffs <- read.csv(system.file("extdata", "cutoffs.csv", package="ResistPhy", mustWork=T))
 ```
 Dichotomise Resistance data
 ```{r}
@@ -176,7 +176,7 @@ Load and preprocess usage data
 ```{r}
 pl_begin <- 1988
 # AZI, PEN, TET, CEF, FQ
-dat <- system.file("extdata", "usage-clean.csv", package = "CostOfResistance", mustWork = TRUE)
+dat <- system.file("extdata", "usage-clean.csv", package = "ResistPhy", mustWork = TRUE)
 abx_raw <- as.matrix(read.csv(dat, header=F))
 abx_df <- as.data.frame(t(abx_raw))
 colnames(abx_df) <- c("year",abx_df[1,2:14])

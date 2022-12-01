@@ -1,4 +1,4 @@
-library(CostOfResistance)
+library(ResistPhy)
 library(ggplot2)
 library(reshape2)
 library(patchwork)

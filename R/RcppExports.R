@@ -3,21 +3,21 @@
 
 #' Simulate SIS epidemic process
 simulate_fast <- function(u0, usage_vals, beta_vals, times, gamma_sus, gamma_res_u, gamma_res_t, dt, N) {
-    .Call('_CostOfResistance_simulate_fast', PACKAGE = 'CostOfResistance', u0, usage_vals, beta_vals, times, gamma_sus, gamma_res_u, gamma_res_t, dt, N)
+    .Call('_ResistPhy_simulate_fast', PACKAGE = 'ResistPhy', u0, usage_vals, beta_vals, times, gamma_sus, gamma_res_u, gamma_res_t, dt, N)
 }
 
 #' Simulate SIS epidemic process
 simulate_fast_nstrain <- function(n_strains, I0, S0, usage_vals, beta_vals, N_vals, gamma_u, gamma_t, times, dt) {
-    .Call('_CostOfResistance_simulate_fast_nstrain', PACKAGE = 'CostOfResistance', n_strains, I0, S0, usage_vals, beta_vals, N_vals, gamma_u, gamma_t, times, dt)
+    .Call('_ResistPhy_simulate_fast_nstrain', PACKAGE = 'ResistPhy', n_strains, I0, S0, usage_vals, beta_vals, N_vals, gamma_u, gamma_t, times, dt)
 }
 
 #' Simulate coalescent tree using thinning
 sim_coal_fast <- function(samp_times, n_samp, Ne_vals, Ne_times, samp_total, dt, n) {
-    .Call('_CostOfResistance_sim_coal_fast', PACKAGE = 'CostOfResistance', samp_times, n_samp, Ne_vals, Ne_times, samp_total, dt, n)
+    .Call('_ResistPhy_sim_coal_fast', PACKAGE = 'ResistPhy', samp_times, n_samp, Ne_vals, Ne_times, samp_total, dt, n)
 }
 
 #' Compute A(t), lineages through time
 compute_At <- function(samp_times, n_samp, coal_times, t_max) {
-    .Call('_CostOfResistance_compute_At', PACKAGE = 'CostOfResistance', samp_times, n_samp, coal_times, t_max)
+    .Call('_ResistPhy_compute_At', PACKAGE = 'ResistPhy', samp_times, n_samp, coal_times, t_max)
 }
 

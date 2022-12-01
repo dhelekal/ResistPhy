@@ -8,8 +8,7 @@ costs_fit2 <- function(fit,
     gamma_guess, 
     gamma_log_sd, 
     n_iter, 
-    n_warmup, 
-    fit_type) {
+    n_warmup) {
 
     draws_a <- as_draws_array(fit$draws())
     ddf <- as.data.frame(as_draws_df(fit$draws()))
@@ -18,22 +17,12 @@ costs_fit2 <- function(fit,
     sampler_diagnostics <- fit$sampler_diagnostics()
     sampler_diagnostics <- as_draws_df(sampler_diagnostics)
 
-    if (fit_type=="LNA") {
-        fit_summary <- fit$summary(c("alpha", 
-                            "rho", 
-                            "f_tilde", 
-                            "xi",
-                            "gamma_sus_tilde",
-                            "q_tilde", 
-                            "I_0_hat"))
-    } else {
-        fit_summary <- fit$summary(c("alpha", 
-                            "rho", 
-                            "f_tilde", 
-                            "gamma_sus_tilde",
-                            "q_tilde", 
-                            "I_0_hat"))
-    }
+    fit_summary <- fit$summary(c("alpha", 
+                        "rho", 
+                        "f_tilde", 
+                        "gamma_sus_tilde",
+                        "q_tilde", 
+                        "I_0_hat"))
 
     converged <- TRUE
     ess_bulk <- fit_summary$ess_bulk
@@ -66,7 +55,6 @@ costs_fit2 <- function(fit,
         time_scale=time_scale,
         n_iter=n_iter,
         n_warmup=n_warmup,
-        fit_type=fit_type,
         stan_fit=fit,
 
         converged=converged
@@ -80,8 +68,7 @@ costs_fit2 <- function(fit,
 #' @param o costsFit2 object
 #' @export
 print.costsFit2 <- function (o, ...) {
-    cat(paste("\nCostOfResistance NUTS posterior fit\n\n"))  
-    cat(paste("\nFit type: ", o$fit_type,"\n"))  
+    cat(paste("\nResistPhy NUTS posterior fit\n\n"))  
     cat(paste("\nFields: ",  names(o), "\n"))
     cat(paste("\nNumber of strains: ", o$n_lineages))
     cat(paste("\nNumber of iterations: ", o$n_iter))

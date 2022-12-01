@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // simulate_fast
 DataFrame simulate_fast(NumericVector u0, NumericVector usage_vals, NumericVector beta_vals, NumericVector times, double gamma_sus, double gamma_res_u, double gamma_res_t, double dt, double N);
-RcppExport SEXP _CostOfResistance_simulate_fast(SEXP u0SEXP, SEXP usage_valsSEXP, SEXP beta_valsSEXP, SEXP timesSEXP, SEXP gamma_susSEXP, SEXP gamma_res_uSEXP, SEXP gamma_res_tSEXP, SEXP dtSEXP, SEXP NSEXP) {
+RcppExport SEXP _ResistPhy_simulate_fast(SEXP u0SEXP, SEXP usage_valsSEXP, SEXP beta_valsSEXP, SEXP timesSEXP, SEXP gamma_susSEXP, SEXP gamma_res_uSEXP, SEXP gamma_res_tSEXP, SEXP dtSEXP, SEXP NSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -31,7 +31,7 @@ END_RCPP
 }
 // simulate_fast_nstrain
 DataFrame simulate_fast_nstrain(int n_strains, NumericVector I0, double S0, NumericVector usage_vals, NumericVector beta_vals, NumericVector N_vals, NumericVector gamma_u, NumericVector gamma_t, NumericVector times, double dt);
-RcppExport SEXP _CostOfResistance_simulate_fast_nstrain(SEXP n_strainsSEXP, SEXP I0SEXP, SEXP S0SEXP, SEXP usage_valsSEXP, SEXP beta_valsSEXP, SEXP N_valsSEXP, SEXP gamma_uSEXP, SEXP gamma_tSEXP, SEXP timesSEXP, SEXP dtSEXP) {
+RcppExport SEXP _ResistPhy_simulate_fast_nstrain(SEXP n_strainsSEXP, SEXP I0SEXP, SEXP S0SEXP, SEXP usage_valsSEXP, SEXP beta_valsSEXP, SEXP N_valsSEXP, SEXP gamma_uSEXP, SEXP gamma_tSEXP, SEXP timesSEXP, SEXP dtSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -51,7 +51,7 @@ END_RCPP
 }
 // sim_coal_fast
 NumericVector sim_coal_fast(NumericVector samp_times, IntegerVector n_samp, NumericVector Ne_vals, NumericVector Ne_times, int samp_total, double dt, int n);
-RcppExport SEXP _CostOfResistance_sim_coal_fast(SEXP samp_timesSEXP, SEXP n_sampSEXP, SEXP Ne_valsSEXP, SEXP Ne_timesSEXP, SEXP samp_totalSEXP, SEXP dtSEXP, SEXP nSEXP) {
+RcppExport SEXP _ResistPhy_sim_coal_fast(SEXP samp_timesSEXP, SEXP n_sampSEXP, SEXP Ne_valsSEXP, SEXP Ne_timesSEXP, SEXP samp_totalSEXP, SEXP dtSEXP, SEXP nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -68,7 +68,7 @@ END_RCPP
 }
 // compute_At
 DataFrame compute_At(NumericVector samp_times, IntegerVector n_samp, NumericVector coal_times, double t_max);
-RcppExport SEXP _CostOfResistance_compute_At(SEXP samp_timesSEXP, SEXP n_sampSEXP, SEXP coal_timesSEXP, SEXP t_maxSEXP) {
+RcppExport SEXP _ResistPhy_compute_At(SEXP samp_timesSEXP, SEXP n_sampSEXP, SEXP coal_timesSEXP, SEXP t_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -82,14 +82,14 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CostOfResistance_simulate_fast", (DL_FUNC) &_CostOfResistance_simulate_fast, 9},
-    {"_CostOfResistance_simulate_fast_nstrain", (DL_FUNC) &_CostOfResistance_simulate_fast_nstrain, 10},
-    {"_CostOfResistance_sim_coal_fast", (DL_FUNC) &_CostOfResistance_sim_coal_fast, 7},
-    {"_CostOfResistance_compute_At", (DL_FUNC) &_CostOfResistance_compute_At, 4},
+    {"_ResistPhy_simulate_fast", (DL_FUNC) &_ResistPhy_simulate_fast, 9},
+    {"_ResistPhy_simulate_fast_nstrain", (DL_FUNC) &_ResistPhy_simulate_fast_nstrain, 10},
+    {"_ResistPhy_sim_coal_fast", (DL_FUNC) &_ResistPhy_sim_coal_fast, 7},
+    {"_ResistPhy_compute_At", (DL_FUNC) &_ResistPhy_compute_At, 4},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_CostOfResistance(DllInfo *dll) {
+RcppExport void R_init_ResistPhy(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
