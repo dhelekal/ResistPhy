@@ -16,9 +16,6 @@ args <- commandArgs(TRUE)
 print(args)
 if (length(args)!=2) {
   stop("Need 2 arguments.", call.=FALSE)
-} else if (length(args)==1) {
-  # default output file
-  args[1] = "out.txt"
 }
 
 idx_begin <- as.numeric(args[1])
