@@ -111,7 +111,7 @@ infer_costs2 <- function(phys,
         L=L
     )
 
-    include_dir <- system.file('stan',package='ResistPhy')
+    include_dir <- system.file('stan',package='ResistPhy',mustWork=T)
 
     if(model=="deterministic") {
         f <- system.file('stan',    

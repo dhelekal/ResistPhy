@@ -23,7 +23,7 @@ library(cmdstanr)
 library(bayesplot)
 library(latex2exp)
 
-run_mcmc <- F
+run_mcmc <- T
 ```
 
 ## Ingest synthetic usage
@@ -133,10 +133,10 @@ out <- infer_costs2(phys,
                     usage_df$time,
                     t0,
                     tmax,
-                    gamma_sus/365,
+                    1/30.0,
                     365,
-                    n_iter=2000, 
-                    n_warmup=2000,
+                    n_iter=2000,#2000, 
+                    n_warmup=2000,#2000,
                     model="deterministic",
                     K=60,
                     L=6.5,

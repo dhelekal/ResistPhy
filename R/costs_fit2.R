@@ -272,8 +272,8 @@ plot_rr_curve <- function(o, res_lineage_idx, rr_threshold=1.0, n_breaks = 100) 
     thm3(aspect.ratio=1) 
 }
 
-#' Plot Rt_res / Rt_sus ratio posterior probability heatmap
-#' @description f(U, c) = P[Rt_res / Rt_sus < c | u(t) = U]
+#' Plot rt_sus - rt_res difference posterior probability heatmap
+#' @description f(U, c) = P[rt_sus - rt_res > c | u(t) = U]
 #' @param o costsFit2 object
 #' @param res_lineage_idx index of resistant lineage to display
 #' @param n_breaks number of usage discretisation breaks
@@ -284,14 +284,14 @@ plot_rr_map <- function(o, res_lineage_idx, n_breaks = 100, min_disp_prob=0.5) {
     q_df <- o$draws_df[,q_names]
     n_samp <- nrow(q_df)
     usage_breaks <- seq(from=0, to=1, length.out=n_breaks)
-    min_rr <- 1/max(q_df$q_u, q_df$q_t)
+    max_rdiff <- max(q_df$q_u - q_df$q_t)
 
-    if (min_rr >= 1) {
-         warning("Posterior Ratio of R(t) never drops below 1, the analysis may be invalid.")
+    if (max_rdiff <= 0) {
+         warning("Posterior difference of growth rates r(t) never exceeds 0, the analysis may be invalid.")
          stop("Cannot plot usage heatmap.")
     }
 
-    rr_breaks <- seq(from=min_rr, to = 1, length.out = n_breaks)
+    rr_breaks <- seq(from=max_rdiff, to = 0, length.out = n_breaks)
     p_df <- data.frame(prob=c(), usage=c(), rr=c())
 
     for (rr in rr_breaks) {

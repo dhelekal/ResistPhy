@@ -1,6 +1,86 @@
 functions {
-    #include basis_gp.stan
-    #include utils.stan
+
+    real sqrt_gp_lambda(int k, real L) {
+        return (k*pi())/(2*L);
+    }
+
+    real gp_basis_fun(real t, real L, int k) {
+        real S = 1/sqrt(L) * sin(sqrt_gp_lambda(k,L)*(t+L));
+        return S;
+    }
+
+    real gp_basis_fun_deriv(real t, real L, int k) {
+        return 1/sqrt(L) * sqrt_gp_lambda(k,L) * cos(sqrt_gp_lambda(k,L)*(t+L));
+    }
+    
+    vector diagSPD_EQ(real alpha, real rho, real L, int M) {
+        return alpha * sqrt(sqrt(2*pi()) * rho) * exp(-0.25*(rho*pi()/2/L)^2 * linspaced_vector(M, 1, M)^2);
+    }
+
+    real const_primitive(real t, real t_lower, real val) {
+        real s = t - t_lower;
+        real out = s*val;
+        return out;
+    }
+
+    //integrate linear interpolation of usage function, i.e. \int_{-1}^{t_i}{ u(t) }\,dt 
+    vector integrate_usage_step(vector times, array[] real ABX_usage, array[] real usage_ts, int M){
+        
+        //First compute the integrals of all components
+        vector[M-1] component_ints;
+        for(j in 2:M) {
+            real t_begin = usage_ts[j-1];
+            real usage_curr = ABX_usage[j-1];
+            real t_end = usage_ts[j];
+
+            component_ints[j-1] = const_primitive(t_end, t_begin, usage_curr);
+        }
+        
+        int N = size(times);
+        vector[N] out = rep_vector(0.0, N);
+
+        for (i in 2:N) {
+            real t = times[i];
+            for(j in 2:M) {
+                if (t > usage_ts[j-1] && t <= usage_ts[j]){
+                    out[i] += const_primitive(t, usage_ts[j-1], ABX_usage[j-1]);
+                    break;
+                } else if (t > usage_ts[j-1]){
+                    out[i] += component_ints[j-1];                    
+                } else {
+                    print(" ", t, ";");
+                    reject("Illegal state reached");   
+                }
+            }
+        }
+        return out;
+    }
+
+    //integrate constant function
+    vector integrate_const(vector times) {
+        int N = size(times);
+        vector[N] out;
+
+        for(i in 1:N) {
+            out[i] = times[i]+1.0;
+        }
+        return out;
+    }
+
+    vector interp_usage_step(vector times, array[] real ABX_usage, array[] real usage_ts, int N, int M) {
+        vector[N] out;
+        for (i in 1:N) {
+            real t = times[i];
+            for(j in 1:(M-1)) {
+                if (t >= usage_ts[j] && t < usage_ts[j+1]){
+                    out[i] = ABX_usage[j];
+                } else if (t >= usage_ts[M]) {
+                    out[i] = ABX_usage[M];
+                }
+            }
+        }
+        return out;
+    } 
 }
 
 
@@ -76,10 +156,10 @@ transformed data {
     }
 
     // Initialise scaling matrix used to decorrelate q-variables
-    real q_scaling = 0.1*(1.0/4.0); //q parameter scaling to stabilise initialisation
     real usage_mean = mean(ABX_usage);
     matrix[2,2] q_rescale;
-    q_rescale[1,:] = (1/(1-usage_mean))*[1.0, -1.0*usage_mean];
+    real A = (1.0/(1.0-usage_mean));
+    q_rescale[1,:] = [1.0,0.0];//A*[1.0, -1.0*usage_mean];
     q_rescale[2,:] = [0.0,1.0];
 }
 
@@ -95,9 +175,11 @@ parameters {
 
 transformed parameters {
     real gamma_sus_sc = exp(gamma_sus_tilde*gamma_log_sd) * gamma_guess * time_scale;
-    matrix[N_lineages-1, 2] q_log = q_scaling * q_tilde;
-    vector[N_lineages-1] q_u;
-    vector[N_lineages-1] q_t;
+    matrix[N_lineages-1, 2] q_hat  = q_tilde * q_rescale' + gamma_sus_sc; //Is this how the rescaling works? verify.
+    array[N_lineages-1, 2] real gamma_res_q = to_array_2d(log1p_exp(q_hat));
+
+    vector[N_lineages-1] gamma_u_sc;
+    vector[N_lineages-1] gamma_t_sc;
 
     vector[N_lineages] I_0_tilde = I_0_hat + 6;
 
@@ -109,8 +191,6 @@ transformed parameters {
     vector[obs_total] log_beta_inst_vec;
 
     {
-        array[N_lineages-1, 2] real q_arr = to_array_2d(exp(q_log) * q_rescale');
-
         vector[obs_total] beta_accum_vec = rate_accum_basis * coeffs;
         vector[obs_total] rate_inst_vec = rate_inst_basis * coeffs;
 
@@ -130,12 +210,11 @@ transformed parameters {
             } else {
                 vector[N_obs] lineage_const_int = segment(const_int, pos_data, N_obs);                
                 vector[N_obs] lineage_usage_int = segment(usage_int, pos_data, N_obs);
-                q_u[i-1] = q_arr[i-1, 1];
-                q_t[i-1] = q_arr[i-1, 2];
+                gamma_u_sc[i-1] = gamma_res_q[i-1, 1];
+                gamma_t_sc[i-1] = gamma_res_q[i-1, 2];
 
                 lineage_log_mean = lineage_beta_accum + 
-                                gamma_sus_sc * 
-                                ((1-q_u[i-1]) * lineage_const_int - (q_t[i-1] - q_u[i-1]) * lineage_usage_int) + c0;
+                                (gamma_sus_sc - gamma_u_sc[i-1]) * lineage_const_int - (gamma_t_sc[i-1] - gamma_u_sc[i-1]) * lineage_usage_int + c0;
             }
 
             traj_vec[pos_data:(pos_data+N_obs-1)] = exp(lineage_log_mean);
@@ -149,15 +228,14 @@ transformed parameters {
 model {    
     f_tilde ~ normal(0, 1);
     gamma_sus_tilde ~ normal(0, 1); 
-    q_u ~ lognormal(0,0.5);
-    q_t ~ lognormal(0,0.5);
+    to_array_1d(gamma_res_q) ~ normal(gamma_sus_sc, 3);
     alpha ~ gamma(4, 4);
     rho ~ inv_gamma(4.63,2.21);
     I_0_hat ~ normal(0,2);
 
-    //Jacobian for q_tilde -> q_u, q_t transform
-
-    target += sum(q_log);
+    //Jacobian for q_tilde -> gamma_res_q transform
+    target += sum(log_inv_logit(q_hat));
+    target += A;
 
     int pos_data = 1;
     int pos_coal = 1;
@@ -181,16 +259,18 @@ model {
 }
 
 generated quantities {
-    real gamma_sus = gamma_sus_sc / time_scale;
+    real gamma_sus = gamma_sus_sc / time_scale * unit_scale;;
 
     vector[N_lineages] I_0 = exp(I_0_tilde);
-    vector[N_lineages-1] gamma_u = gamma_sus * q_u;
-    vector[N_lineages-1] gamma_t = gamma_sus * q_t;
+    vector[N_lineages-1] gamma_u = gamma_u_sc / time_scale * unit_scale;;
+    vector[N_lineages-1] gamma_t = gamma_t_sc / time_scale * unit_scale;;
+    vector[N_lineages-1] q_u = gamma_t - gamma_sus;
+    vector[N_lineages-1] q_t = gamma_u - gamma_sus;
     
     vector[obs_total] birthrate = exp(log_beta_inst_vec)/time_scale * unit_scale;
     vector[obs_total] Ne = 0.5 * traj_vec ./ birthrate;
     vector[obs_total] I_mean = exp(log_mean_vec);
-    vector[obs_total] R_t;
+    vector[obs_total] r_t;
 
     {
         int pos = 1;
@@ -198,12 +278,11 @@ generated quantities {
             int N_obs = obs_counts[i];
             vector[N_obs] lineage_birthrate = segment(birthrate, pos, N_obs);
             if (i==1) {
-                R_t[pos:(pos+N_obs-1)] = lineage_birthrate ./ unit_scale ./ gamma_sus; 
+                r_t[pos:(pos+N_obs-1)] = lineage_birthrate ./ unit_scale  -  gamma_sus; 
             } else {
                 vector[N_obs] lineage_usage_vals = segment(usage_vals, pos, N_obs);
-                R_t[pos:(pos+N_obs-1)] = lineage_birthrate ./ 
-                                        unit_scale ./ 
-                                        (lineage_usage_vals*(gamma_t[i-1]-gamma_u[i-1]) + gamma_u[i-1]); 
+                r_t[pos:(pos+N_obs-1)] = lineage_birthrate ./ 
+                                        unit_scale - (lineage_usage_vals*(gamma_t[i-1]-gamma_u[i-1]) + gamma_u[i-1]); 
             }
             pos += N_obs;
         }
