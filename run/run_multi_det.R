@@ -20,50 +20,19 @@ if (length(args)!=2) {
 
 idx_begin <- as.numeric(args[1])
 extent <- as.numeric(args[2])
-
 n_runs <- 50
-
-run_idx <- c(idx_begin:(idx_begin + extent - 1))
-
 usage_df <- simulated_usage()
-
-set.seed(123456)
-traj_seeds <- sample.int(n=100000, 50, F)
-set.seed(457869)
-phy_seeds <- sample.int(n=100000, 50, F)
-
-q_u <- seq(from=0.0, to= 2.0, length.out=n_runs)
-q_t <- seq(from=0.0, to=-3.0, length.out=n_runs)
-
-t0 <- min(usage_df$time)
-tmax <- max(usage_df$time)
-gamma_sus <- 1/60.0*365.0
-n_tip <- 200
-
-gamma_u <- gamma_sus*q_u
-gamma_t <- gamma_sus*q_t
-
-phys <- list()
-most_recent_samp <- list()
-
-for (i in c(1:extent)) {
-    idx <- run_idx[i]
-
-    sim_out <- sample_phylo(gamma_sus, gamma_u[idx], gamma_t[idx], n_tip, traj_seeds[idx], phy_seeds[idx])
-    sim_df <- sim_out$traj
-
-    phys[[i]] <- sim_out$phys
-    most_recent_samp[[i]] <- sim_out$most_recent_samp
-}
 
 n_warmup <- 2000
 n_it <- 2000
 recovery_data <- data.frame(variable=c(), value=c(), para_idx=c())
 converged <- c()
 
+sim<-sim_n_traj(idx_begin, extent, n_runs, plot_traj=FALSE)
+
 for (i in c(1:extent)) {
-    out <- infer_costs2(phys[[i]], 
-                most_recent_samp[[i]],
+    out <- infer_costs2(sim$phys[[i]], 
+                sim$most_recent_samp[[i]],
                 usage_df$usage,
                 usage_df$time,
                 t0,
@@ -76,7 +45,7 @@ for (i in c(1:extent)) {
                 K=60,
                 L=6.5,
                 gamma_log_sd=0.1,
-                seed=run_idx[i],
+                seed=sim$run_idx[i],
                 stan_control=list(adapt_delta=.99,
                     max_treedepth=13,
                     parallel_chains=4,
@@ -89,7 +58,7 @@ for (i in c(1:extent)) {
 
     temp_df <- melt(temp_df, measure.vars=c("q_u", "q_t"), 
                 variable.name="variable", value.name="value")
-    temp_df$para_idx <- run_idx[i]
+    temp_df$para_idx <- sim$run_idx[i]
     recovery_data <- rbind(recovery_data, temp_df)
     converged <- c(converged, out$converged)
 }
