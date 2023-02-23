@@ -234,32 +234,32 @@ plot_Ne <- function(o,  lineage_index, n_draws=40, ...) {
     plot_timeseries(o, lineage_index, ts, I_names, ytitle, n_draws)
 }
 
-#' Plot R(t) credible intervals and posterior draws
+#' Plot growth rate r(t) credible intervals and posterior draws
 #' @param o costsFit2 object
 #' @param lineage_index index of lineage to display, '1' indicates susceptible
-#' @param n_draws Number of posterior R(t) draws to sample
+#' @param n_draws Number of posterior r(t) draws to sample
 #' @export
 plot_rt <- function(o, lineage_index, n_draws=40, ...) {
     ts <- o$time_vecs[[lineage_index]]
     
     lineage_indices <- c(o$idx_begin[lineage_index]:o$idx_end[lineage_index])
-    I_names <- sapply(lineage_indices,function(i) paste0("R_t[",i,"]"))
-    ytitle <- "R(t)"
+    I_names <- sapply(lineage_indices,function(i) paste0("r_t[",i,"]"))
+    ytitle <- "r(t)"
     plot_timeseries(o, lineage_index, ts, I_names, ytitle, n_draws)
 }
 
 #' Plot Rt_res / Rt_sus ratio posterior probability curve for a given threshold
-#' @description f(U) = P[Rt_res / Rt_sus < c | u(t) = U]
+#' @description f(U) = P[rt_sus - rt_res > c | u(t) = U]
 #' @param o costsFit2 object
 #' @param res_lineage_idx index of resistant lineage to display
 #' @param rr_threshold r_t ratio for which to plot the curve
 #' @param n_breaks number of usage discretisation breaks
 #' @export
-plot_rr_curve <- function(o, res_lineage_idx, rr_threshold=1.0, n_breaks = 100) {
+plot_rr_curve <- function(o, res_lineage_idx, rr_threshold=0.0, n_breaks = 100) {
     q_names <- paste0(c("q_u[", "q_t["), res_lineage_idx, "]")
     q_df <- o$draws_df[,q_names]
     n_samp <- nrow(q_df)
-    usage_thresholds <-  apply(q_df, 1, function(x) (1.0/rr_threshold - x[1])/(x[2]-x[1]))
+    usage_thresholds <-  apply(q_df, 1, function(x) (rr_threshold - x[1])/(x[2]-x[1]))
     usage_breaks <- seq(from=0, to=1, length.out=n_breaks)
     probs <- sapply(usage_breaks, function(x) length(which(usage_thresholds > x))/n_samp)
 
@@ -267,7 +267,7 @@ plot_rr_curve <- function(o, res_lineage_idx, rr_threshold=1.0, n_breaks = 100) 
 
     ggplot(p_df) + 
     geom_step(aes(x=usage, y=prob), fill="lightsteelblue3", color="lightsteelblue3") +
-    labs(x="Usage", y="Posterior Probability", title=TeX(sprintf("Posterior Probability of $R_r(t)/R_s(t) < %.2f$", rr_threshold))) +
+    labs(x="Usage", y="Posterior Probability", title=TeX(sprintf("Posterior Probability of $r_r(t) - r_s(t) < %.2f$", rr_threshold))) +
     theme_minimal() +
     thm3(aspect.ratio=1) 
 }
@@ -284,18 +284,18 @@ plot_rr_map <- function(o, res_lineage_idx, n_breaks = 100, min_disp_prob=0.5) {
     q_df <- o$draws_df[,q_names]
     n_samp <- nrow(q_df)
     usage_breaks <- seq(from=0, to=1, length.out=n_breaks)
-    max_rdiff <- max(q_df$q_u - q_df$q_t)
+    max_cost <- max(q_df$q_u)
 
-    if (max_rdiff <= 0) {
-         warning("Posterior difference of growth rates r(t) never exceeds 0, the analysis may be invalid.")
-         stop("Cannot plot usage heatmap.")
+    if (max_cost <= 0) {
+         warning("Posterior difference between resistant and susceptible growth rates r(t) never drops below 0.
+            This suggests no transmission cost to resistance")
     }
 
-    rr_breaks <- seq(from=max_rdiff, to = 0, length.out = n_breaks)
+    rr_breaks <- seq(from=-max_cost, to = 0, length.out = n_breaks)
     p_df <- data.frame(prob=c(), usage=c(), rr=c())
 
     for (rr in rr_breaks) {
-        usage_thresholds <-  apply(q_df, 1, function(x) (1.0/rr - x[1])/(x[2]-x[1]))
+        usage_thresholds <-  apply(q_df, 1, function(x) (c - x[1])/(x[2]-x[1]))
         probs <- sapply(usage_breaks, function(x) length(which(usage_thresholds > x))/n_samp)
         tmp_df <- data.frame(prob = probs, usage=usage_breaks, rr=rr)
         p_df <- rbind(p_df, tmp_df)
@@ -310,7 +310,7 @@ plot_rr_map <- function(o, res_lineage_idx, n_breaks = 100, min_disp_prob=0.5) {
     geom_contour_filled(aes(x=usage, y=rr, z=prob), breaks=breaks) +
     #geom_tile(aes(x=usage, y=rr, fill=prob)) +
     scale_color_viridis() +
-    labs(x="Usage", y="C", fill="Posterior Probability", title=TeX(sprintf("Posterior Probability of $R_r(t)/R_s(t) < C$ given usage level"))) +
+    labs(x="Usage", y="C", fill="Posterior Probability", title=TeX(sprintf("Posterior Probability of $r_r(t) - r_s(t) < c$ given usage level"))) +
     xlim(0, x_upper) +
     ylim(y_lower, 1) +
     theme_minimal() +

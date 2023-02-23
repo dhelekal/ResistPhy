@@ -32,8 +32,8 @@ traj_seeds <- sample.int(n=100000, 50, F)
 set.seed(457869)
 phy_seeds <- sample.int(n=100000, 50, F)
 
-q_u <- seq(from=1.0, to=1.2, length.out=n_runs)
-q_t <- seq(from=1.0, to=0.5, length.out=n_runs)
+q_u <- seq(from=0.0, to= 2.0, length.out=n_runs)
+q_t <- seq(from=0.0, to=-3.0, length.out=n_runs)
 
 t0 <- min(usage_df$time)
 tmax <- max(usage_df$time)

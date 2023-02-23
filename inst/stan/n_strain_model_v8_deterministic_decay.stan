@@ -56,6 +56,42 @@ functions {
         return out;
     }
 
+    vector integrate_usage_decay(vector times, array[] real ABX_usage, array[] real usage_ts, int M) {
+                
+        //First compute the integrals of all components
+        vector[M-1] component_ints;
+        for(j in 2:M) {
+            real t_begin = usage_ts[j-1];
+            real usage_curr = ABX_usage[j-1];
+            real t_end = usage_ts[j];
+
+            component_ints[j-1] = const_primitive(t_end, t_begin, usage_curr);
+        }
+        
+        int N = size(times);
+        vector[N] out = rep_vector(0.0, N);
+
+        for (i in 2:N) {
+            real t = times[i];
+            for(j in 2:M) {
+                if (t > usage_ts[j-1] && t <= usage_ts[j]){
+                    out[i] += const_primitive(t, usage_ts[j-1], ABX_usage[j-1]);
+                    break;
+                } else if (t > usage_ts[j-1]){
+                    out[i] += component_ints[j-1];                    
+                } else {
+                    print(" ", t, ";");
+                    reject("Illegal state reached");   
+                }
+            }
+        }
+        return out;
+    }
+
+    vector integrate_decay(vector times, ){
+
+    } 
+
     //integrate constant function
     vector integrate_const(vector times) {
         int N = size(times);
@@ -80,7 +116,8 @@ functions {
             }
         }
         return out;
-    } 
+    }
+
 }
 
 
@@ -121,7 +158,7 @@ transformed data {
             rate_accum_basis[j, k] = gp_basis_fun(times[j], L, k);
         }
     }
-
+ 
     // Initialise ragged basis matrix holding instantaneous rates for susceptible trajectory 
     matrix[obs_total,K] rate_inst_basis;
     for (k in 1:K) {
@@ -171,6 +208,9 @@ parameters {
     real gamma_sus_tilde; 
     real<lower=0> alpha;
     real<lower=0> rho; 
+
+    array[N_lineages-1] real<upper=0> phi;
+    array[N_lineages-1] real<lower =0, upper= 1> p;
 }
 
 transformed parameters {
@@ -188,7 +228,11 @@ transformed parameters {
 
     vector[obs_total] traj_vec;
     vector[obs_total] log_mean_vec;
+    
     vector[obs_total] log_beta_inst_vec;
+
+    vector[obs_total - obs_counts[1]] log_mean_vec_decay;
+    vector[obs_total - obs_counts[1]] traj_vec_decay;
 
     {
         vector[obs_total] beta_accum_vec = rate_accum_basis * coeffs;
@@ -206,8 +250,7 @@ transformed parameters {
             vector[N_obs] lineage_log_mean;
 
             if (i == 1) {
-                lineage_log_mean = lineage_beta_accum + c0;
-            } else {
+                lineage_log_mean = lineage_beta_accum + c0; 
                 vector[N_obs] lineage_const_int = segment(const_int, pos_data, N_obs);                
                 vector[N_obs] lineage_usage_int = segment(usage_int, pos_data, N_obs);
                 gamma_u_sc[i-1] = gamma_res_q[i-1, 1];
@@ -278,10 +321,11 @@ generated quantities {
             int N_obs = obs_counts[i];
             vector[N_obs] lineage_birthrate = segment(birthrate, pos, N_obs);
             if (i==1) {
-                r_t[pos:(pos+N_obs-1)] = lineage_birthrate -  gamma_sus; 
+                r_t[pos:(pos+N_obs-1)] = lineage_birthrate ./ unit_scale  -  gamma_sus; 
             } else {
                 vector[N_obs] lineage_usage_vals = segment(usage_vals, pos, N_obs);
-                r_t[pos:(pos+N_obs-1)] = lineage_birthrate - (lineage_usage_vals*(gamma_t[i-1]-gamma_u[i-1]) + gamma_u[i-1]); 
+                r_t[pos:(pos+N_obs-1)] = lineage_birthrate ./ 
+                                        unit_scale - (lineage_usage_vals*(gamma_t[i-1]-gamma_u[i-1]) + gamma_u[i-1]); 
             }
             pos += N_obs;
         }
