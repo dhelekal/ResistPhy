@@ -14,12 +14,23 @@ source("simu_phylo.R")
 # test if there is at least one argument: if not, return an error
 args <- commandArgs(TRUE)
 print(args)
-if (length(args)!=2) {
-  stop("Need 2 arguments.", call.=FALSE)
+if (length(args)!=3) {
+  stop("Need 3 arguments.", call.=FALSE)
 }
 
 idx_begin <- as.numeric(args[1])
 extent <- as.numeric(args[2])
+mod_c <- as.numeric(args[3])
+
+if(mod_c==1) {
+  mod <- "nodecay"
+} else if (mod_c==2) {
+  mod <- "decay"
+} else {
+  stop("Invalid model choice", call.=FALSE)
+}
+
+
 n_runs <- 50
 usage_df <- simulated_usage()
 
@@ -41,7 +52,7 @@ for (i in c(1:extent)) {
                 365,
                 n_iter=n_it, 
                 n_warmup=n_warmup,
-                model="deterministic",
+                model=mod,
                 K=60,
                 L=6.5,
                 gamma_log_sd=0.1,
@@ -52,15 +63,22 @@ for (i in c(1:extent)) {
                     chains=4,
                     refresh=0
                 ))
-    
-    temp_df <- out$draws_df[,c("q_u[1]", "q_t[1]")]
-    colnames(temp_df) <- c("q_u","q_t")
+      if (mod == "nodecay"){
+        dnames <- c("q_u[1]", "q_t[1]")
+        vnames <- c("q_u","q_t")
+      } else {
+        dnames <- c("q_u[1]", "q_t[1]", "phi[1]", "p[1]")
+        vnames <- c("q_u","q_t", "phi", "p")
+      }
+      temp_df <- out$draws_df[,dnames]
+      colnames(temp_df) <- vnames
 
-    temp_df <- melt(temp_df, measure.vars=c("q_u", "q_t"), 
-                variable.name="variable", value.name="value")
-    temp_df$para_idx <- sim$run_idx[i]
-    recovery_data <- rbind(recovery_data, temp_df)
-    converged <- c(converged, out$converged)
+      temp_df <- melt(temp_df, measure.vars=vnames, 
+        variable.name="variable", value.name="value")
+
+      temp_df$para_idx <- sim$run_idx[i]
+      recovery_data <- rbind(recovery_data, temp_df)
+      converged <- c(converged, out$converged)
 }
 
 saveRDS(recovery_data, paste0("det_para_",idx_begin,"_",extent, ".rds"))

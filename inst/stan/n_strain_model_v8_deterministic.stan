@@ -159,7 +159,7 @@ transformed data {
     real usage_mean = mean(ABX_usage);
     matrix[2,2] q_rescale;
     real A = (1.0/(1.0-usage_mean));
-    q_rescale[1,:] = [1.0,0.0];//A*[1.0, -1.0*usage_mean];
+    q_rescale[1,:] = A*[1.0, -1.0*usage_mean];
     q_rescale[2,:] = [0.0,1.0];
 }
 
@@ -228,7 +228,7 @@ transformed parameters {
 model {    
     f_tilde ~ normal(0, 1);
     gamma_sus_tilde ~ normal(0, 1); 
-    to_array_1d(gamma_res_q) ~ normal(gamma_sus_sc, 3);
+    to_array_1d(gamma_res_q) ~ normal(gamma_sus_sc, 0.3 * gamma_guess * time_scale);
     alpha ~ gamma(4, 4);
     rho ~ inv_gamma(4.63,2.21);
     I_0_hat ~ normal(0,2);
@@ -259,19 +259,18 @@ model {
 }
 
 generated quantities {
-    real gamma_sus = gamma_sus_sc / time_scale * unit_scale;;
+    real gamma_sus = gamma_sus_sc / time_scale * unit_scale;
 
     vector[N_lineages] I_0 = exp(I_0_tilde);
-    vector[N_lineages-1] gamma_u = gamma_u_sc / time_scale * unit_scale;;
-    vector[N_lineages-1] gamma_t = gamma_t_sc / time_scale * unit_scale;;
-    vector[N_lineages-1] q_u = gamma_t - gamma_sus;
-    vector[N_lineages-1] q_t = gamma_u - gamma_sus;
+    vector[N_lineages-1] gamma_u = gamma_u_sc / time_scale * unit_scale;
+    vector[N_lineages-1] gamma_t = gamma_t_sc / time_scale * unit_scale;
+    vector[N_lineages-1] q_u = gamma_u - gamma_sus;
+    vector[N_lineages-1] q_t = gamma_t - gamma_sus;
     
     vector[obs_total] birthrate = exp(log_beta_inst_vec)/time_scale * unit_scale;
     vector[obs_total] Ne = 0.5 * traj_vec ./ birthrate;
     vector[obs_total] I_mean = exp(log_mean_vec);
     vector[obs_total] r_t;
-
     {
         int pos = 1;
         for (i in 1:N_lineages) {

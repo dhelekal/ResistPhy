@@ -22,12 +22,18 @@ functions {
         real out = s*val;
         return out;
     }
+    
+    real negexp_primitive(real t, real t_lower, real rate) {
+        real t_min = -1.0;
+        real out = 1/rate * (exp(-rate * (t_lower - t_min)) - exp(-rate * (t - t_min)));
+        return out;
+    }
 
     //integrate linear interpolation of usage function, i.e. \int_{-1}^{t_i}{ u(t) }\,dt 
     vector integrate_usage_step(vector times, array[] real ABX_usage, array[] real usage_ts, int M){
         
         //First compute the integrals of all components
-        vector[M-1] component_ints;
+        vector[M-1] component_ints = rep_vector(0.0, M-1); 
         for(j in 2:M) {
             real t_begin = usage_ts[j-1];
             real usage_curr = ABX_usage[j-1];
@@ -59,7 +65,7 @@ functions {
     vector integrate_usage_decay(vector times, array[] real ABX_usage, array[] real usage_ts, int M) {
                 
         //First compute the integrals of all components
-        vector[M-1] component_ints;
+        vector[M-1] component_ints = rep_vector(0.0, M-1);
         for(j in 2:M) {
             real t_begin = usage_ts[j-1];
             real usage_curr = ABX_usage[j-1];
@@ -88,8 +94,81 @@ functions {
         return out;
     }
 
-    vector integrate_decay(vector times, ){
+    vector integrate_components_decay_usage(array[] real ABX_usage, array[] real usage_ts, real rate){
+        //First compute the integrals of all components
+        int M = size(usage_ts);
+        vector[M-1] component_ints = rep_vector(0.0, M-1);
+        for(j in 2:M) {
+            real t_begin = usage_ts[j-1];
+            real usage_curr = ABX_usage[j-1];
+            real t_end = usage_ts[j];
 
+            component_ints[j-1] = usage_curr * negexp_primitive(t_end, t_begin, rate);
+        }
+        return component_ints;
+    } 
+
+    vector integrate_components_decay_const(array[] real usage_ts, real rate){
+        //First compute the integrals of all components
+        int M = size(usage_ts);
+        vector[M-1] component_ints = rep_vector(0.0, M-1);
+        for(j in 2:M) {
+            real t_begin = usage_ts[j-1];
+            real t_end = usage_ts[j];
+
+            component_ints[j-1] = negexp_primitive(t_end, t_begin, rate);
+        }
+        return component_ints;
+    }
+
+    vector localise_times_usage(vector times, array[] real ABX_usage, array[] real usage_ts){
+        int N = size(times);
+        int M = size(usage_ts);
+        vector[N] out = rep_vector(0.0, N);
+        for (i in 2:N) {
+            real t = times[i];
+            for(j in 2:M) {
+                if (t > usage_ts[j-1] && t <= usage_ts[j]){
+                    out[i] = ABX_usage[j-1];
+                    break;
+                } 
+            }
+        }
+        return out;
+    } 
+
+    vector localise_times_lower(vector times, array[] real usage_ts){
+        int N = size(times);
+        int M = size(usage_ts);
+        vector[N] out = rep_vector(0.0, N);
+        for (i in 2:N) {
+            real t = times[i];
+            for(j in 2:M) {
+                if (t > usage_ts[j-1] && t <= usage_ts[j]){
+                    out[i] = usage_ts[j-1];
+                    break;
+                } 
+            }
+        }
+        return out;
+    } 
+
+    
+    matrix build_component_sum_mat(vector times, array[] real usage_ts){
+        int N = size(times);
+        int M = size(usage_ts);
+        matrix[N,M-1] out = rep_matrix(0.0,N,M-1);
+        for (i in 2:N) {
+            real t = times[i];
+            row_vector[M-1] r = rep_row_vector(0.0,M-1);
+            for(j in 2:M) {
+                if (t > usage_ts[j]){
+                    r[j-1] = 1.0;
+                } 
+            }
+            out[i, :] = r;
+        }
+        return out;
     } 
 
     //integrate constant function
@@ -167,6 +246,16 @@ transformed data {
         }
     }
 
+    int sus_count = obs_counts[1];
+    int res_count = obs_total - sus_count;
+    vector[res_count] res_Ts = segment(times, 1+sus_count, sum(obs_counts[2:N_lineages]));
+    //Initialise usage time localisation for cost decay for resistant strains
+    vector[res_count] time_loc = localise_times_lower(res_Ts, usage_ts);
+    //Initialise usage value localisation for cost decay for resistant strains
+    vector[res_count] usage_loc = localise_times_usage(res_Ts, ABX_usage, usage_ts);
+    //build decay rate integral sum matrix for resistant strains
+    matrix[res_count, M-1] comp_sum_mat = build_component_sum_mat(res_Ts, usage_ts);
+    
     /* Initialise ragged vectors holding constant function time integral,
      * usage function time integral, and usage function values. 
      * Initialise vectors of one timestep differences for these integrals.
@@ -209,7 +298,7 @@ parameters {
     real<lower=0> alpha;
     real<lower=0> rho; 
 
-    array[N_lineages-1] real<upper=0> phi;
+    array[N_lineages-1] real<lower=0> phi;
     array[N_lineages-1] real<lower =0, upper= 1> p;
 }
 
@@ -231,15 +320,15 @@ transformed parameters {
     
     vector[obs_total] log_beta_inst_vec;
 
-    vector[obs_total - obs_counts[1]] log_mean_vec_decay;
-    vector[obs_total - obs_counts[1]] traj_vec_decay;
+    vector[res_count] log_mean_vec_decay;
+    vector[res_count] traj_vec_decay;
 
     {
         vector[obs_total] beta_accum_vec = rate_accum_basis * coeffs;
         vector[obs_total] rate_inst_vec = rate_inst_basis * coeffs;
 
         log_beta_inst_vec = log(gamma_sus_sc) + log1p(rate_inst_vec/gamma_sus_sc);
-        
+    
         int pos_data = 1;
         for (i in 1:N_lineages) {
             int N_obs = obs_counts[i];
@@ -251,14 +340,51 @@ transformed parameters {
 
             if (i == 1) {
                 lineage_log_mean = lineage_beta_accum + c0; 
+            } else {
+                vector[N_obs] lineage_log_mean_decay;
+
+                int pos_res = pos_data-sus_count;
+                vector[M-1] usage_decay_steps = integrate_components_decay_usage(ABX_usage, usage_ts, phi[i-1]);
+                vector[M-1] const_decay_steps = integrate_components_decay_const(usage_ts, phi[i-1]);
+
+                vector[N_obs] usage_decay_ints;
+                vector[N_obs] const_decay_ints; 
+
+                vector[N_obs] lineage_usage_loc = segment(usage_loc, pos_res, N_obs);
+                vector[N_obs] lineage_time_loc = segment(time_loc, pos_res, N_obs);
+                matrix[N_obs, M-1] lineage_sum_mat = block(comp_sum_mat, pos_res, 1,  N_obs, M-1);
+        
+                for (j in 1:N_obs) {
+                    const_decay_ints[j] = negexp_primitive(lineage_times[j], lineage_time_loc[j], phi[i-1]);
+                }
+
+                for (j in 1:N_obs) {
+                    usage_decay_ints[j] = lineage_usage_loc[i]*negexp_primitive(lineage_times[j], lineage_time_loc[j], phi[i-1]);
+                }
+
+                const_decay_ints += lineage_sum_mat * const_decay_steps;
+                usage_decay_ints += lineage_sum_mat * usage_decay_steps;
+
                 vector[N_obs] lineage_const_int = segment(const_int, pos_data, N_obs);                
                 vector[N_obs] lineage_usage_int = segment(usage_int, pos_data, N_obs);
+
                 gamma_u_sc[i-1] = gamma_res_q[i-1, 1];
                 gamma_t_sc[i-1] = gamma_res_q[i-1, 2];
 
                 lineage_log_mean = lineage_beta_accum + 
                                 (gamma_sus_sc - gamma_u_sc[i-1]) * lineage_const_int - (gamma_t_sc[i-1] - gamma_u_sc[i-1]) * lineage_usage_int + c0;
+                
+                lineage_log_mean_decay = lineage_beta_accum + gamma_sus_sc * lineage_const_int -
+                    gamma_t_sc[i-1] * lineage_usage_int -
+                    (gamma_u_sc[i-1]-gamma_sus_sc) * (const_decay_ints - usage_decay_ints) - 
+                    (lineage_const_int - lineage_usage_int) * gamma_sus_sc +
+                    c0;
+
+                traj_vec_decay[pos_res:(pos_res+N_obs-1)] = exp(lineage_log_mean_decay);
+                log_mean_vec_decay[pos_res:(pos_res+N_obs-1)] = lineage_log_mean_decay;
             }
+
+            
 
             traj_vec[pos_data:(pos_data+N_obs-1)] = exp(lineage_log_mean);
             log_mean_vec[pos_data:(pos_data+N_obs-1)] = lineage_log_mean;
@@ -271,10 +397,11 @@ transformed parameters {
 model {    
     f_tilde ~ normal(0, 1);
     gamma_sus_tilde ~ normal(0, 1); 
-    to_array_1d(gamma_res_q) ~ normal(gamma_sus_sc, 3);
+    to_array_1d(gamma_res_q) ~ normal(gamma_sus_sc, 0.3 * gamma_guess * time_scale);
     alpha ~ gamma(4, 4);
     rho ~ inv_gamma(4.63,2.21);
     I_0_hat ~ normal(0,2);
+    phi ~ normal(0, 1);
 
     //Jacobian for q_tilde -> gamma_res_q transform
     target += sum(log_inv_logit(q_hat));
@@ -283,7 +410,6 @@ model {
     int pos_data = 1;
     int pos_coal = 1;
     for (i in 1:N_lineages) {
-
         int N_obs = obs_counts[i];
 
         vector[N_obs] lineage_log_traj = segment(log_mean_vec, pos_data, N_obs);
@@ -291,10 +417,21 @@ model {
         vector[N_obs] lineage_combNs = segment(combNs, pos_data, N_obs);
         array[coal_counts[i]] int lineage_coal_index = segment(coal_index, pos_coal, coal_counts[i]);
         vector[N_obs] lineage_wt = segment(w_t, pos_data, N_obs);
-
         vector[N_obs] log_rates =  log(2.0) + lineage_log_beta_inst - lineage_log_traj;
-        target += -sum(lineage_combNs .* lineage_wt .* exp(log_rates));
-        target += sum(log_rates[lineage_coal_index]);
+
+        if (i == 1) {
+            target += -sum(lineage_combNs .* lineage_wt .* exp(log_rates));
+            target += sum(log_rates[lineage_coal_index]);
+        } else {
+            int pos_res = pos_data-sus_count;
+            vector[N_obs] lineage_log_traj_decay = segment(log_mean_vec_decay, pos_res, N_obs);
+            vector[N_obs] log_rates_decay = log(2.0) + lineage_log_beta_inst - lineage_log_traj_decay;
+            
+            real nodecay_inc = sum(log_rates[lineage_coal_index]) - sum(lineage_combNs .* lineage_wt .* exp(log_rates));
+            real decay_inc = sum(log_rates_decay[lineage_coal_index]) - sum(lineage_combNs .* lineage_wt .* exp(log_rates_decay));
+
+            target += log_sum_exp(log(p[i-1]) +  nodecay_inc, log1m(p[i-1]) + decay_inc);
+        }
 
         pos_data += N_obs;
         pos_coal += coal_counts[i];
@@ -302,13 +439,13 @@ model {
 }
 
 generated quantities {
-    real gamma_sus = gamma_sus_sc / time_scale * unit_scale;;
+    real gamma_sus = gamma_sus_sc / time_scale * unit_scale;
 
     vector[N_lineages] I_0 = exp(I_0_tilde);
-    vector[N_lineages-1] gamma_u = gamma_u_sc / time_scale * unit_scale;;
-    vector[N_lineages-1] gamma_t = gamma_t_sc / time_scale * unit_scale;;
-    vector[N_lineages-1] q_u = gamma_t - gamma_sus;
-    vector[N_lineages-1] q_t = gamma_u - gamma_sus;
+    vector[N_lineages-1] gamma_u = gamma_u_sc / time_scale * unit_scale;
+    vector[N_lineages-1] gamma_t = gamma_t_sc / time_scale * unit_scale;
+    vector[N_lineages-1] q_u = gamma_u - gamma_sus;
+    vector[N_lineages-1] q_t = gamma_t - gamma_sus;
     
     vector[obs_total] birthrate = exp(log_beta_inst_vec)/time_scale * unit_scale;
     vector[obs_total] Ne = 0.5 * traj_vec ./ birthrate;

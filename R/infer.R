@@ -28,7 +28,7 @@ infer_costs2 <- function(phys,
                         gamma_log_sd=0.1,
                         n_iter = 2000, 
                         n_warmup = 2000, 
-                        model="deterministic",
+                        model="nodecay",
                         L = 6.5,
                         K = 65,
                         seed = 1,
@@ -113,9 +113,15 @@ infer_costs2 <- function(phys,
 
     include_dir <- system.file('stan',package='ResistPhy',mustWork=T)
 
-    if(model=="deterministic") {
+    if(model=="nodecay") {
         f <- system.file('stan',    
                         'n_strain_model_v8_deterministic.stan',
+                        package='ResistPhy',
+                        mustWork = T)
+    }
+    else if(model=="decay") {
+        f <- system.file('stan',    
+                        'n_strain_model_v8_deterministic_decay.stan',
                         package='ResistPhy',
                         mustWork = T)
     } else {
@@ -150,7 +156,8 @@ infer_costs2 <- function(phys,
                     gamma_guess, 
                     gamma_log_sd, 
                     n_iter, 
-                    n_warmup)
+                    n_warmup,
+                    model)
     return(out)
 }
 

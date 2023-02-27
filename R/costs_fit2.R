@@ -8,7 +8,8 @@ costs_fit2 <- function(fit,
     gamma_guess, 
     gamma_log_sd, 
     n_iter, 
-    n_warmup) {
+    n_warmup,
+    model) {
 
     draws_a <- as_draws_array(fit$draws())
     ddf <- as.data.frame(as_draws_df(fit$draws()))
@@ -17,12 +18,26 @@ costs_fit2 <- function(fit,
     sampler_diagnostics <- fit$sampler_diagnostics()
     sampler_diagnostics <- as_draws_df(sampler_diagnostics)
 
-    fit_summary <- fit$summary(c("alpha", 
-                        "rho", 
-                        "f_tilde", 
-                        "gamma_sus_tilde",
-                        "q_tilde", 
-                        "I_0_hat"))
+    if (model == "nodecay") {
+        fit_summary <- fit$summary(c("alpha", 
+                            "rho", 
+                            "f_tilde", 
+                            "gamma_sus_tilde",
+                            "q_tilde", 
+                            "I_0_hat"))
+    } else if(model == "decay")
+    {
+        fit_summary <- fit$summary(c("alpha", 
+                            "rho", 
+                            "f_tilde", 
+                            "gamma_sus_tilde",
+                            "q_tilde", 
+                            "I_0_hat",
+                            "phi",
+                            "p"))
+    } else {
+        stop("Unsupported model")
+    }
 
     converged <- TRUE
     ess_bulk <- fit_summary$ess_bulk
@@ -56,7 +71,7 @@ costs_fit2 <- function(fit,
         n_iter=n_iter,
         n_warmup=n_warmup,
         stan_fit=fit,
-
+        model=model,
         converged=converged
     )
 
@@ -80,7 +95,13 @@ print.costsFit2 <- function (o, ...) {
 #' @param o costsFit2 object
 #' @export
 plot_traces <- function(o, ...) {
-    mcmc_trace(o$draws_arr, pars = c("alpha", "rho", "gamma_sus_tilde"), regex_pars=c("I_0_hat.*", "q_tilde.*"),
+    if (model == "nodecay")
+    {
+        rp <- c("I_0_hat.*", "q_tilde.*")
+    } else {
+        rp <- c("I_0_hat.*", "q_tilde.*", "phi.*", "p.*")
+    }
+    mcmc_trace(o$draws_arr, pars = c("alpha", "rho", "gamma_sus_tilde"), regex_pars=rp,
            facet_args = list(ncol = 1, strip.position = "left"))
 }
 
@@ -122,21 +143,23 @@ plot_epi_pairs <- function(o, res_lineage_idx, ...) {
     q_u_name <- paste0("q_u[",res_lineage_idx,"]")
     q_t_name <- paste0("q_t[",res_lineage_idx,"]")
 
+    sc = o$time_scale
+
     gamma_sus_hist <- ggplot(o$draws_df, aes_(x=as.name("gamma_sus"))) + 
         geom_histogram(aes(y = ..density..), position="identity", bins=50, fill="lightsteelblue3") + 
-        geom_function(fun = function(x) dlnorm(x, meanlog = log(o$gamma_guess), sdlog = o$gamma_log_sd), linetype="longdash", color="steelblue4") + 
+        geom_function(fun = function(x) dlnorm(x, meanlog = log(o$gamma_guess*sc), sdlog = o$gamma_log_sd), linetype="longdash", color="steelblue4") + 
         labs(x="", y="", title=TeX("$\\gamma$")) +
         theme_minimal() + thm1()
 
 
     q_u_hist <- ggplot(o$draws_df, aes_(x=as.name(q_u_name))) + 
                         geom_histogram(aes(y = ..density..), position="identity", bins=50, fill="lightsteelblue3") + 
-                        geom_function(fun = function(x) dlnorm(x, meanlog = 0, sdlog = 0.5), linetype="longdash", color="steelblue4") + 
+                        geom_function(fun = function(x) dnorm(x, mean = 0, sd = 0.3 * o$gamma_guess * sc), linetype="longdash", color="steelblue4") + 
                         labs(x="", y="", title=TeX(paste0("$",q_u_name,"$"))) +
                         theme_minimal() + thm1()
     q_t_hist <- ggplot(o$draws_df, aes_(x=as.name(q_t_name))) + 
                         geom_histogram(aes(y = ..density..), position="identity", bins=50, fill="lightsteelblue3") + 
-                        geom_function(fun = function(x) dlnorm(x, meanlog = 0, sdlog = 0.5), linetype="longdash", color="steelblue4") + 
+                        geom_function(fun = function(x) dnorm(x, mean = 0, sd = 0.3 * o$gamma_guess * sc), linetype="longdash", color="steelblue4") + 
                         labs(x="", y="", title=TeX(paste0("$",q_t_name,"$"))) +
                         theme_minimal() + thm1()
 
@@ -322,7 +345,7 @@ plot_rr_map <- function(o, res_lineage_idx, n_breaks = 100, min_disp_prob=0.5) {
 #' @param lineage_index index of lineage to display, '1' indicates susceptible
 #' @param n_draws number of trajectories to simulate and overlay
 #' @export
-plot_ppcheck_At <- function(o, lineage_index, n_draws=100, ...) {
+plot_ppcheck_At <- function(o, lineage_index, n_draws=40, ...) {
     ts <- o$time_vecs[[lineage_index]]
     t_max <- max(ts)-min(ts)
     n <- length(ts)
@@ -340,9 +363,10 @@ plot_ppcheck_At <- function(o, lineage_index, n_draws=100, ...) {
 
     data_df <- compute_At(phy$samp_times, phy$n_samp, phy$coal_times, t_max)
 
-    ggplot(pp_df) + geom_step(aes(x=t, y=At, group=draw), alpha=0.1, color="gray", size=0.2) + 
+    ggplot(pp_df) + geom_step(aes(x=t, y=At, group=draw, color=draw), alpha=0.3, color="gray", size=0.4) + 
                     geom_step(data=data_df, aes(x=t, y=At), color="black", size=0.7, linetype="dashed") +
                     labs(x="Time", y="A(t)") + 
+                    scale_color_brewer("PuBu")+
                     scale_y_log10() + 
                     theme_minimal() + 
                     thm3()
