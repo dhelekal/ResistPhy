@@ -95,7 +95,7 @@ print.costsFit2 <- function (o, ...) {
 #' @param o costsFit2 object
 #' @export
 plot_traces <- function(o, ...) {
-    if (model == "nodecay")
+    if (o$model == "nodecay")
     {
         rp <- c("I_0_hat.*", "q_tilde.*")
     } else {
@@ -314,11 +314,11 @@ plot_rr_map <- function(o, res_lineage_idx, n_breaks = 100, min_disp_prob=0.5) {
             This suggests no transmission cost to resistance")
     }
 
-    rr_breaks <- seq(from=-max_cost, to = 0, length.out = n_breaks)
+    rr_breaks <- seq(from = 0, to = max_cost, length.out = n_breaks)
     p_df <- data.frame(prob=c(), usage=c(), rr=c())
 
     for (rr in rr_breaks) {
-        usage_thresholds <-  apply(q_df, 1, function(x) (c - x[1])/(x[2]-x[1]))
+        usage_thresholds <-  apply(q_df, 1, function(x) (rr - x[1])/(x[2]-x[1]))
         probs <- sapply(usage_breaks, function(x) length(which(usage_thresholds > x))/n_samp)
         tmp_df <- data.frame(prob = probs, usage=usage_breaks, rr=rr)
         p_df <- rbind(p_df, tmp_df)
@@ -333,7 +333,7 @@ plot_rr_map <- function(o, res_lineage_idx, n_breaks = 100, min_disp_prob=0.5) {
     geom_contour_filled(aes(x=usage, y=rr, z=prob), breaks=breaks) +
     #geom_tile(aes(x=usage, y=rr, fill=prob)) +
     scale_color_viridis() +
-    labs(x="Usage", y="C", fill="Posterior Probability", title=TeX(sprintf("Posterior Probability of $r_r(t) - r_s(t) < c$ given usage level"))) +
+    labs(x="Usage", y="C", fill="Posterior Probability", title=TeX(sprintf("Posterior Probability of $r_s(t) - r_r(t) > c$ given usage level"))) +
     xlim(0, x_upper) +
     ylim(y_lower, 1) +
     theme_minimal() +

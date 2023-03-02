@@ -159,7 +159,7 @@ transformed data {
     real usage_mean = mean(ABX_usage);
     matrix[2,2] q_rescale;
     real A = (1.0/(1.0-usage_mean));
-    q_rescale[1,:] = A*[1.0, -1.0*usage_mean];
+    q_rescale[1,:] = [1.0,0.0];//A*[1.0, -1.0*usage_mean];
     q_rescale[2,:] = [0.0,1.0];
 }
 
@@ -235,7 +235,6 @@ model {
 
     //Jacobian for q_tilde -> gamma_res_q transform
     target += sum(log_inv_logit(q_hat));
-    target += A;
 
     int pos_data = 1;
     int pos_coal = 1;

@@ -9,7 +9,7 @@ library(bayesplot)
 library(phylodyn)
 library(latex2exp)
 
-source("simu_phylo.R")
+source("sim_traj.R")
 
 # test if there is at least one argument: if not, return an error
 args <- commandArgs(TRUE)
@@ -33,6 +33,9 @@ if(mod_c==1) {
 
 n_runs <- 50
 usage_df <- simulated_usage()
+gamma_sus <- 1/60.0*365.0
+t0 <- min(usage_df$time)
+tmax <- max(usage_df$time)
 
 n_warmup <- 2000
 n_it <- 2000

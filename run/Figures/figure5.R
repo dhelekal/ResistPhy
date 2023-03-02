@@ -23,4 +23,4 @@ x_max <- max(layer_scales(fig5a)$x$range$range, layer_scales(fig5b)$x$range$rang
 fig5a <- fig5a+xlim(x_min,x_max)
 fig5b <- fig5b+xlim(x_min,x_max)
 
-fig5 <- (fig5a | fig5b) +  plot_annotation(title = TeX(sprintf("Posterior Probability of $R_r(t)/R_s(t) < C$ given usage level"))) 
+fig5 <- (fig5a | fig5b) +  plot_annotation(title = TeX(sprintf("Posterior Probability of $r_s(t) - r_r(t) > c$ given usage level"))) 

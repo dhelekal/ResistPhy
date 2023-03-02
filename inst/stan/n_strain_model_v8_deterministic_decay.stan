@@ -405,7 +405,6 @@ model {
 
     //Jacobian for q_tilde -> gamma_res_q transform
     target += sum(log_inv_logit(q_hat));
-    target += A;
 
     int pos_data = 1;
     int pos_coal = 1;

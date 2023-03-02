@@ -28,8 +28,8 @@ DataFrame simulate_fast(NumericVector u0,
     S_v[0] = u0[2];
     inf_rate_v[0] = beta_vals[0]*S_v[0]/N;
 
-    rt_s_v[0] = inf_rate_v[0]/gamma_sus;
-    rt_r_v[0] = inf_rate_v[0]/((1.0-usage_vals[0])*gamma_res_u + usage_vals[0]*gamma_res_t);
+    rt_s_v[0] = inf_rate_v[0]-gamma_sus;
+    rt_r_v[0] = inf_rate_v[0]-((1.0-usage_vals[0])*gamma_res_u + usage_vals[0]*gamma_res_t);
     
     for (int i = 1; i < n; i++) {
         double gamma_res = (1.0-usage_vals[i-1])*gamma_res_u + usage_vals[i-1]*gamma_res_t;
@@ -44,8 +44,8 @@ DataFrame simulate_fast(NumericVector u0,
         births_I_r_v[i] = births_I_r;
 
         inf_rate_v[i] = beta_vals[i]*S_v[i]/N;
-        rt_s_v[i] = inf_rate_v[i]/gamma_sus;
-        rt_r_v[i] = inf_rate_v[i]/((1.0-usage_vals[i])*gamma_res_u + usage_vals[i]*gamma_res_t);
+        rt_s_v[i] = inf_rate_v[i]-gamma_sus;
+        rt_r_v[i] = inf_rate_v[i]-((1.0-usage_vals[i])*gamma_res_u + usage_vals[i]*gamma_res_t);
     }
     DataFrame out = DataFrame::create(Named("t") = times,         
                                       Named("I_s") = I_s_v,
@@ -89,7 +89,7 @@ DataFrame simulate_fast_nstrain(
         I_v[i][0] = I0[i];
         births_v.push_back(NumericVector(n, 0.0));
         rt_v.push_back(NumericVector(n, 0.0));
-        rt_v[i][0] = inf_rate_v[0]/((1.0-usage_vals[0])*gamma_u[i] + usage_vals[0]*gamma_t[i]);
+        rt_v[i][0] = inf_rate_v[0]-((1.0-usage_vals[0])*gamma_u[i] + usage_vals[0]*gamma_t[i]);
     }
     
     for (int i = 1; i < n; i++) {
@@ -110,7 +110,7 @@ DataFrame simulate_fast_nstrain(
         for (int j = 0; j < n_strains; j++) {
             births_v[j][i] = b_I[j];
             I_v[j][i] = I_v[j][i-1] + b_I[j] - d_I[j];
-            rt_v[j][i] = inf_rate_v[i]/gamma[j];
+            rt_v[j][i] = inf_rate_v[i]-gamma[j];
         }
     }
 
