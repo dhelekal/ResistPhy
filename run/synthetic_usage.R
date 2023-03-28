@@ -4,6 +4,7 @@ l <- 4
 mvar <- 0.4
 dist_m <- as.matrix(dist(ts,"manhattan",T,T))
 cov_m <- apply(dist_m, c(1,2), function(d) mvar*exp(-0.5*(d/l)^2))
+diag(cov_m) <- diag(cov_m) + 1e-6 #Jitter to ensure positive semi-definiteness on some systems 
 
 mean_func <- function(x) 0.2+(0.2/2)*max(min(x-8,2),0) + max(min(x-10, 4),0)*(-0.25/4) + max(min(x-14, 1),0)*(0.01/1) + max(min(x-16, 1),0)*(-0.05/1)
 logi <- function(x) 1/(1+exp(-x))

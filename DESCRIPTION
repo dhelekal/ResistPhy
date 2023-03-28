@@ -6,7 +6,7 @@ Authors@R: person("David", "Helekal", email = "David.Helekal@warwick.ac.uk", rol
 Maintainer: David Helekal <david.helekal@gmail.com>
 Depends: R (>= 4.0.0)
 LinkingTo: Rcpp
-Imports: Rcpp, ape, stats, graphics, cmdstanr, posterior, phylodyn, ggplot2
+Imports: Rcpp, ape, stats, graphics, cmdstanr, posterior, phylodyn, ggplot2, bayesplot, latex2exp, patchwork
 Suggests: knitr, testthat, rmarkdown
 Description: 
 VignetteBuilder: knitr
