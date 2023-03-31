@@ -17,4 +17,4 @@ M<-chol(cov_m)
 
 logit_usage <- log_odds_mu + M %*% phi
 usage_df <- data.frame(time=ts, usage=sapply(logit_usage,logi))
-write.table(usage_df, "./../inst/extdata/synthetic_usage.csv", sep=",")
+write.table(usage_df, "synthetic_usage.csv", sep=",")

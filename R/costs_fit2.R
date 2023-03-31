@@ -80,15 +80,15 @@ costs_fit2 <- function(fit,
 }
 
 #' Print fit summary
-#' @param o costsFit2 object
+#' @param x costsFit2 object
 #' @export
-print.costsFit2 <- function (o, ...) {
+print.costsFit2 <- function (x, ...) {
     cat(paste("\nResistPhy NUTS posterior fit\n\n"))  
-    cat(paste("\nFields: ",  names(o), "\n"))
-    cat(paste("\nNumber of strains: ", o$n_lineages))
-    cat(paste("\nNumber of iterations: ", o$n_iter))
-    cat(paste("\nNumber of warmup iterations: ", o$n_warmup,"\n"))
-    cat(paste("\nConvergence: ", o$converged,"\n"))
+    cat(paste("\nFields: ",  names(x), "\n"))
+    cat(paste("\nNumber of strains: ", x$n_lineages))
+    cat(paste("\nNumber of iterations: ", x$n_iter))
+    cat(paste("\nNumber of warmup iterations: ", x$n_warmup,"\n"))
+    cat(paste("\nConvergence: ", x$converged,"\n"))
 }
 
 #' Plot traces for a subset of parameters using bayesplot

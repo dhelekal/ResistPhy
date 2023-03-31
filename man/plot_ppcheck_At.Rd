@@ -4,7 +4,7 @@
 \alias{plot_ppcheck_At}
 \title{Plot posterior predictive draws and data overlay for the lineages through time function}
 \usage{
-plot_ppcheck_At(o, lineage_index, n_draws = 100, ...)
+plot_ppcheck_At(o, lineage_index, n_draws = 40, ...)
 }
 \arguments{
 \item{o}{costsFit2 object}

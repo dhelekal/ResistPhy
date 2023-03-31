@@ -1,5 +1,5 @@
-#' @description Simulate coalescent process times using Poisson Process Thinning
-#' @details Ne function is interpolated as a step function
+#' Simulate coalescent process times using Poisson Process Thinning
+#' Note: Ne function is interpolated as a step function
 #' @param samp_t a vector ofsampling times
 #' @param n_samp a vector containing the numbers of samples taken at corresponding sampling time.
 #' @param Ne_vals a vector of Ne(t) values.

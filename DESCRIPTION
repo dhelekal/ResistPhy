@@ -1,16 +1,16 @@
 Package: ResistPhy
 Type: Package
-Title: Estimation of cost/benefit of AMR resistance as a function of AMR usage from dated phylogenies
+Title: Estimating the fitness cost and benefit of antimicrobial resistance from pathogen genomic data
 Version: 0.1.0
 Authors@R: person("David", "Helekal", email = "David.Helekal@warwick.ac.uk", role = c("aut", "cre"))
 Maintainer: David Helekal <david.helekal@gmail.com>
 Depends: R (>= 4.0.0)
 LinkingTo: Rcpp
-Imports: Rcpp, ape, stats, graphics, cmdstanr, posterior, phylodyn, ggplot2, bayesplot, latex2exp, patchwork
+Imports: Rcpp, ape, stats, graphics, cmdstanr, posterior, phylodyn, ggplot2, bayesplot, latex2exp, patchwork, RColorBrewer, reshape2, treeio, viridis
 Suggests: knitr, testthat, rmarkdown
-Description: 
+Description: ResistPhy is a R package that can estimate the cost and benefit of antimicrobial resistance from dated phylogenies and antimicrobial usage data.
 VignetteBuilder: knitr
-License: GNU GPL-3
-RoxygenNote: 7.1.2
+License: GPL (>=3.0)
+RoxygenNote: 7.2.0
 Encoding: UTF-8
 LazyData: true 
