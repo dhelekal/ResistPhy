@@ -4,10 +4,10 @@
 \alias{print.costsFit2}
 \title{Print fit summary}
 \usage{
-\method{print}{costsFit2}(o, ...)
+\method{print}{costsFit2}(x, ...)
 }
 \arguments{
-\item{o}{costsFit2 object}
+\item{x}{costsFit2 object}
 }
 \description{
 Print fit summary

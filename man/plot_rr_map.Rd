@@ -2,7 +2,7 @@
 % Please edit documentation in R/costs_fit2.R
 \name{plot_rr_map}
 \alias{plot_rr_map}
-\title{Plot Rt_res / Rt_sus ratio posterior probability heatmap}
+\title{Plot rt_sus - rt_res difference posterior probability heatmap}
 \usage{
 plot_rr_map(o, res_lineage_idx, n_breaks = 100, min_disp_prob = 0.5)
 }
@@ -16,5 +16,5 @@ plot_rr_map(o, res_lineage_idx, n_breaks = 100, min_disp_prob = 0.5)
 \item{min_disp_prob}{minimum probability display cutoff}
 }
 \description{
-f(U, c) = P[Rt_res / Rt_sus < c | u(t) = U]
+f(U, c) = P[rt_sus - rt_res > c | u(t) = U]
 }
