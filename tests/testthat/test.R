@@ -254,9 +254,9 @@ test_that("Simulation usage interpolation function agrees with model interpolati
 
     stan_mod <- cmdstan_model(system.file('stan',    
                                 'test_interpolation.stan',
-                                package='CostOfResistance',
+                                package='ResistPhy',
                                 mustWork = T),
-                            include_paths=system.file('stan',package='CostOfResistance'),
+                            include_paths=system.file('stan',package='ResistPhy'),
                             compile=F) 
 
     stan_mod$compile()

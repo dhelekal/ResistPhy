@@ -42,3 +42,4 @@ vignettes/*.pdf
 #C/C++ compiled files
 *.o
 *.so
+.vscode/settings.json

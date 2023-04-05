@@ -1,5 +1,5 @@
 ---
-title: "Ngono Cost of Resistance"
+title: "N. gono Cost of Resistance"
 output: rmarkdown::html_document
 ---
 

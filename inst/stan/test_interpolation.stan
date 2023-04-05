@@ -1,5 +1,18 @@
 functions {
-    #include utils.stan
+    vector interp_usage_step(vector times, array[] real ABX_usage, array[] real usage_ts, int N, int M) {
+        vector[N] out;
+        for (i in 1:N) {
+            real t = times[i];
+            for(j in 1:(M-1)) {
+                if (t >= usage_ts[j] && t < usage_ts[j+1]){
+                    out[i] = ABX_usage[j];
+                } else if (t >= usage_ts[M]) {
+                    out[i] = ABX_usage[M];
+                }
+            }
+        }
+        return out;
+    } 
 }
 
 data {
