@@ -20,7 +20,7 @@ sim_n_traj <- function (idx_begin, extent, n_runs, plot_traj=FALSE){
     phy_seeds <- sample.int(n=100000, n_runs, F)
 
     q_u <- seq(from=0.0, to = 1.3, length.out=n_runs)
-    q_t <- seq(from=0.0, to = -2.9, length.out=n_runs)
+    q_t <- seq(from=0.0, to = -3.3, length.out=n_runs)
 
     t0 <- min(usage_df$time)
     tmax <- max(usage_df$time)

@@ -23,7 +23,7 @@ library(cmdstanr)
 library(bayesplot)
 library(latex2exp)
 
-run_mcmc <- F
+run_mcmc <- T
 ```
 
 ## Ingest synthetic usage
@@ -134,13 +134,13 @@ out <- infer_costs2(phys,
                     t0,
                     tmax,
                     1/60.0,
-                    365,3
+                    365,
                     n_iter=2000, 
                     n_warmup=2000,
                     model="nodecay",
                     K=60,
                     L=6.5,
-                    gamma_log_sd=0.1,
+                    gamma_log_sd=0.3,
                     stan_control=list(adapt_delta=.99,
                         max_treedepth=13,
                         parallel_chains=4,
