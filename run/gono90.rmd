@@ -23,7 +23,7 @@ library(viridis)
 library(RColorBrewer)
 library(latex2exp)
 
-run_mcmc <- F
+run_mcmc <- T
 ```
 ## Load tree from Yonathan Grad's paper, do some boring bioinformatics stuff
 Honestly wish my computer could just read my mind and do what I want, automatically
@@ -286,7 +286,7 @@ out <- infer_costs2(list(sus_tr, res_tr_1, res_tr_2),
                     K=60,
                     L=6.5,
                     seed=1345678,
-                    gamma_log_sd = 0.1,
+                    gamma_log_sd = 0.3,
                     stan_control=list(adapt_delta=.99,
                         max_treedepth=13,
                         parallel_chains=4,
