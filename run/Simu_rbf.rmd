@@ -23,7 +23,7 @@ library(cmdstanr)
 library(bayesplot)
 library(latex2exp)
 
-run_mcmc <- T
+run_mcmc <- F
 ```
 
 ## Ingest synthetic usage
