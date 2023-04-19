@@ -20,16 +20,6 @@ if (length(args)!=3) {
 
 idx_begin <- as.numeric(args[1])
 extent <- as.numeric(args[2])
-mod_c <- as.numeric(args[3])
-
-if(mod_c==1) {
-  mod <- "nodecay"
-} else if (mod_c==2) {
-  mod <- "decay"
-} else {
-  stop("Invalid model choice", call.=FALSE)
-}
-
 
 n_runs <- 50
 usage_df <- simulated_usage()
@@ -55,7 +45,6 @@ for (i in c(1:extent)) {
                 365,
                 n_iter=n_it, 
                 n_warmup=n_warmup,
-                model=mod,
                 K=60,
                 L=6.5,
                 gamma_log_sd=0.1,
@@ -66,13 +55,10 @@ for (i in c(1:extent)) {
                     chains=4,
                     refresh=0
                 ))
-      if (mod == "nodecay"){
-        dnames <- c("q_u[1]", "q_t[1]")
-        vnames <- c("q_u","q_t")
-      } else {
-        dnames <- c("q_u[1]", "q_t[1]", "phi[1]", "p[1]")
-        vnames <- c("q_u","q_t", "phi", "p")
-      }
+
+      dnames <- c("q_u[1]", "q_t[1]")
+      vnames <- c("q_u","q_t")
+    
       temp_df <- out$draws_df[,dnames]
       colnames(temp_df) <- vnames
 

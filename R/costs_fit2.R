@@ -25,17 +25,7 @@ costs_fit2 <- function(fit,
                             "gamma_sus_tilde",
                             "q_tilde", 
                             "I_0_hat"))
-    } else if(model == "decay")
-    {
-        fit_summary <- fit$summary(c("alpha", 
-                            "rho", 
-                            "f_tilde", 
-                            "gamma_sus_tilde",
-                            "q_tilde", 
-                            "I_0_hat",
-                            "phi",
-                            "p"))
-    } else {
+    }  else {
         stop("Unsupported model")
     }
 
@@ -95,12 +85,9 @@ print.costsFit2 <- function (x, ...) {
 #' @param o costsFit2 object
 #' @export
 plot_traces <- function(o, ...) {
-    if (o$model == "nodecay")
-    {
-        rp <- c("I_0_hat.*", "q_tilde.*")
-    } else {
-        rp <- c("I_0_hat.*", "q_tilde.*", "phi.*", "p.*")
-    }
+
+    rp <- c("I_0_hat.*", "q_tilde.*")
+
     mcmc_trace(o$draws_arr, pars = c("alpha", "rho", "gamma_sus_tilde"), regex_pars=rp,
            facet_args = list(ncol = 1, strip.position = "left"))
 }

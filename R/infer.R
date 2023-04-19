@@ -28,12 +28,12 @@ infer_costs2 <- function(phys,
                         gamma_log_sd=0.1,
                         n_iter = 2000, 
                         n_warmup = 2000, 
-                        model="nodecay",
                         L = 6.5,
                         K = 65,
                         seed = 1,
                         max_dt=1e-3,
                         stan_control=stan_defaults()) {
+    model <- "nodecay"
     old_int <- c(t_begin, t_end)
     new_int <- c(-1,1)
     ABX_times <- rescale_times(ABX_times, old_int, new_int)
@@ -118,14 +118,8 @@ infer_costs2 <- function(phys,
                         'n_strain_model_v8_deterministic.stan',
                         package='ResistPhy',
                         mustWork = T)
-    }
-    else if(model=="decay") {
-        f <- system.file('stan',    
-                        'n_strain_model_v8_deterministic_decay.stan',
-                        package='ResistPhy',
-                        mustWork = T)
     } else {
-        stop("Invalid Model Choice")
+        stop("Invalid Model")
     }
     mod <- cmdstan_model(f, include_paths=include_dir, stanc_options = list("O1")) 
 
