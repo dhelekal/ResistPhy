@@ -8,6 +8,8 @@ plot_traces(o, ...)
 }
 \arguments{
 \item{o}{costsFit2 object}
+
+\item{...}{Additional parameters}
 }
 \description{
 Plot traces for a subset of parameters using bayesplot

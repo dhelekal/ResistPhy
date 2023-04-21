@@ -12,6 +12,8 @@ plot_ppcheck_At(o, lineage_index, n_draws = 40, ...)
 \item{lineage_index}{index of lineage to display, '1' indicates susceptible}
 
 \item{n_draws}{number of trajectories to simulate and overlay}
+
+\item{...}{Additional parameters}
 }
 \description{
 Plot posterior predictive draws and data overlay for the lineages through time function

@@ -8,11 +8,13 @@ Note: Ne function is interpolated as a step function}
 sim_coal(samp_t, n_samp, Ne_vals, Ne_times)
 }
 \arguments{
-\item{samp_t}{a vector ofsampling times}
+\item{samp_t}{a vector of sampling times}
 
 \item{n_samp}{a vector containing the numbers of samples taken at corresponding sampling time.}
 
-\item{Ne_vals}{a vector of time points corresponding to Ne(t) values. Must be equally spaced.}
+\item{Ne_vals}{a vector of Ne(t) values.}
+
+\item{Ne_times}{a vector of time points corresponding to Ne(t) values.}
 }
 \description{
 Simulate coalescent process times using Poisson Process Thinning

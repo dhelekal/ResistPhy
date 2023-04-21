@@ -3,6 +3,10 @@
 using namespace Rcpp;
 
 //' Compute A(t), lineages through time
+//' @param samp_times a vector of sampling times
+//' @param n_samp a vector containing the numbers of samples taken at corresponding sampling time
+//' @param coal_times vector of coalescent times
+//' @param t_max maximum time
 // [[Rcpp::export]]
 
 DataFrame compute_At(NumericVector samp_times,

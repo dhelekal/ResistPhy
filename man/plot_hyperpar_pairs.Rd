@@ -8,6 +8,8 @@ plot_hyperpar_pairs(o, ...)
 }
 \arguments{
 \item{o}{costsFit2 object}
+
+\item{...}{Additional parameters}
 }
 \description{
 Plot posterior marginals for GP hyperparameters

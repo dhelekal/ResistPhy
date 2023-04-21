@@ -17,6 +17,27 @@ simulate_fast_nstrain(
   dt
 )
 }
+\arguments{
+\item{n_strains}{Number of strains}
+
+\item{I0}{Vector of initial infecteds}
+
+\item{S0}{Initial susceptibles}
+
+\item{usage_vals}{Vector of usage values}
+
+\item{beta_vals}{Vector of beta values}
+
+\item{N_vals}{Vector N_vals}
+
+\item{gamma_u}{recovery rates when not treated with ABX of interest}
+
+\item{gamma_t}{recovery rates when treated with ABX of interest}
+
+\item{times}{Vector of times}
+
+\item{dt}{dt}
+}
 \description{
 Simulate SIS epidemic process
 }

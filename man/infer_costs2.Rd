@@ -16,7 +16,6 @@ infer_costs2(
   gamma_log_sd = 0.1,
   n_iter = 2000,
   n_warmup = 2000,
-  model = "nodecay",
   L = 6.5,
   K = 65,
   seed = 1,

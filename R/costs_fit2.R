@@ -71,6 +71,7 @@ costs_fit2 <- function(fit,
 
 #' Print fit summary
 #' @param x costsFit2 object
+#' @param ... Additional parameters
 #' @export
 print.costsFit2 <- function (x, ...) {
     cat(paste("\nResistPhy NUTS posterior fit\n\n"))  
@@ -83,6 +84,7 @@ print.costsFit2 <- function (x, ...) {
 
 #' Plot traces for a subset of parameters using bayesplot
 #' @param o costsFit2 object
+#' @param ... Additional parameters
 #' @export
 plot_traces <- function(o, ...) {
 
@@ -94,6 +96,7 @@ plot_traces <- function(o, ...) {
 
 #' Plot posterior marginals for GP hyperparameters
 #' @param o costsFit2 object
+#' @param ... Additional parameters
 #' @export
 plot_hyperpar_pairs <- function(o, ...) {
     blank <- plot_spacer()
@@ -122,6 +125,7 @@ plot_hyperpar_pairs <- function(o, ...) {
 #' Plot posterior marginals and scatter plots for recovery rates using bayesplot
 #' @param res_lineage_idx index of resistant lineage to display
 #' @param o costsFit2 object
+#' @param ... Additional parameters
 #' @export
 plot_epi_pairs <- function(o, res_lineage_idx, ...) {
 
@@ -174,6 +178,7 @@ plot_epi_pairs <- function(o, res_lineage_idx, ...) {
 
 #' Plot q parameter marginals for all resistant strains
 #' @param o costsFit2 object
+#' @param ... Additional parameters
 #' @export
 plot_qpairs <- function(o, ...) {
     blank <- plot_spacer()
@@ -220,6 +225,7 @@ plot_qpairs <- function(o, ...) {
 #' @param o costsFit2 object
 #' @param lineage_index index of lineage to display, '1' indicates susceptible
 #' @param n_draws Number of posterior epidemic trajectory draws to sample
+#' @param ... Additional parameters
 #' @export
 plot_epi_dynamic <- function(o, lineage_index, n_draws=40, ...) {
     ts <- o$time_vecs[[lineage_index]]
@@ -234,6 +240,7 @@ plot_epi_dynamic <- function(o, lineage_index, n_draws=40, ...) {
 #' @param o costsFit2 object
 #' @param lineage_index index of lineage to display, '1' indicates susceptible
 #' @param n_draws Number of posterior Ne trajectory draws to sample
+#' @param ... Additional parameters
 #' @export
 plot_Ne <- function(o,  lineage_index, n_draws=40, ...) {
     ts <- o$time_vecs[[lineage_index]]
@@ -248,6 +255,7 @@ plot_Ne <- function(o,  lineage_index, n_draws=40, ...) {
 #' @param o costsFit2 object
 #' @param lineage_index index of lineage to display, '1' indicates susceptible
 #' @param n_draws Number of posterior r(t) draws to sample
+#' @param ... Additional parameters
 #' @export
 plot_rt <- function(o, lineage_index, n_draws=40, ...) {
     ts <- o$time_vecs[[lineage_index]]
@@ -331,6 +339,7 @@ plot_rr_map <- function(o, res_lineage_idx, n_breaks = 100, min_disp_prob=0.5) {
 #' @param o costsFit2 object
 #' @param lineage_index index of lineage to display, '1' indicates susceptible
 #' @param n_draws number of trajectories to simulate and overlay
+#' @param ... Additional parameters
 #' @export
 plot_ppcheck_At <- function(o, lineage_index, n_draws=40, ...) {
     ts <- o$time_vecs[[lineage_index]]

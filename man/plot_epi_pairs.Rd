@@ -10,6 +10,8 @@ plot_epi_pairs(o, res_lineage_idx, ...)
 \item{o}{costsFit2 object}
 
 \item{res_lineage_idx}{index of resistant lineage to display}
+
+\item{...}{Additional parameters}
 }
 \description{
 Plot posterior marginals and scatter plots for recovery rates using bayesplot

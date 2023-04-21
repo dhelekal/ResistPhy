@@ -16,6 +16,25 @@ simulate_fast(
   N
 )
 }
+\arguments{
+\item{u0}{Vector u0}
+
+\item{usage_vals}{Vector of usage values}
+
+\item{beta_vals}{Vector of beta values}
+
+\item{times}{Vector of times}
+
+\item{gamma_sus}{Recovery rate for sus}
+
+\item{gamma_res_u}{Recovery rate for res untreated}
+
+\item{gamma_res_t}{Recovery rate for res treated}
+
+\item{dt}{dt}
+
+\item{N}{N}
+}
 \description{
 Simulate SIS epidemic process
 }

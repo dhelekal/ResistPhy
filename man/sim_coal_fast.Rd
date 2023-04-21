@@ -6,6 +6,21 @@
 \usage{
 sim_coal_fast(samp_times, n_samp, Ne_vals, Ne_times, samp_total, dt, n)
 }
+\arguments{
+\item{samp_times}{a vector of sampling times}
+
+\item{n_samp}{a vector containing the numbers of samples taken at corresponding sampling time.}
+
+\item{Ne_vals}{a vector of Ne(t) values.}
+
+\item{Ne_times}{a vector of time points corresponding to Ne(t) values.}
+
+\item{samp_total}{samp_total}
+
+\item{dt}{dt}
+
+\item{n}{n}
+}
 \description{
 Simulate coalescent tree using thinning
 }
