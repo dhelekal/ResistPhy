@@ -2,21 +2,51 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' Simulate SIS epidemic process
+#' @param u0 Vector u0
+#' @param usage_vals Vector of usage values
+#' @param beta_vals Vector of beta values
+#' @param times Vector of times
+#' @param gamma_sus Recovery rate for sus
+#' @param gamma_res_u Recovery rate for res untreated
+#' @param gamma_res_t Recovery rate for res treated
+#' @param dt dt
+#' @param N N
 simulate_fast <- function(u0, usage_vals, beta_vals, times, gamma_sus, gamma_res_u, gamma_res_t, dt, N) {
     .Call('_ResistPhy_simulate_fast', PACKAGE = 'ResistPhy', u0, usage_vals, beta_vals, times, gamma_sus, gamma_res_u, gamma_res_t, dt, N)
 }
 
 #' Simulate SIS epidemic process
+#' @param n_strains Number of strains
+#' @param I0 Vector of initial infecteds
+#' @param S0 Initial susceptibles
+#' @param usage_vals Vector of usage values
+#' @param beta_vals Vector of beta values
+#' @param N_vals Vector N_vals
+#' @param gamma_u recovery rates when not treated with ABX of interest
+#' @param gamma_t recovery rates when treated with ABX of interest
+#' @param times Vector of times
+#' @param dt dt
 simulate_fast_nstrain <- function(n_strains, I0, S0, usage_vals, beta_vals, N_vals, gamma_u, gamma_t, times, dt) {
     .Call('_ResistPhy_simulate_fast_nstrain', PACKAGE = 'ResistPhy', n_strains, I0, S0, usage_vals, beta_vals, N_vals, gamma_u, gamma_t, times, dt)
 }
 
 #' Simulate coalescent tree using thinning
+#' @param samp_times a vector of sampling times
+#' @param n_samp a vector containing the numbers of samples taken at corresponding sampling time.
+#' @param Ne_vals a vector of Ne(t) values.
+#' @param Ne_times a vector of time points corresponding to Ne(t) values.
+#' @param samp_total samp_total
+#' @param dt dt
+#' @param n n
 sim_coal_fast <- function(samp_times, n_samp, Ne_vals, Ne_times, samp_total, dt, n) {
     .Call('_ResistPhy_sim_coal_fast', PACKAGE = 'ResistPhy', samp_times, n_samp, Ne_vals, Ne_times, samp_total, dt, n)
 }
 
 #' Compute A(t), lineages through time
+#' @param samp_times a vector of sampling times
+#' @param n_samp a vector containing the numbers of samples taken at corresponding sampling time
+#' @param coal_times vector of coalescent times
+#' @param t_max maximum time
 compute_At <- function(samp_times, n_samp, coal_times, t_max) {
     .Call('_ResistPhy_compute_At', PACKAGE = 'ResistPhy', samp_times, n_samp, coal_times, t_max)
 }

@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{x}{costsFit2 object}
+
+\item{...}{Additional parameters}
 }
 \description{
 Print fit summary

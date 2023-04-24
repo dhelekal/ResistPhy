@@ -12,6 +12,8 @@ plot_epi_dynamic(o, lineage_index, n_draws = 40, ...)
 \item{lineage_index}{index of lineage to display, '1' indicates susceptible}
 
 \item{n_draws}{Number of posterior epidemic trajectory draws to sample}
+
+\item{...}{Additional parameters}
 }
 \description{
 Plot epidemic trajectory credible intervals and posterior draws

@@ -10,7 +10,11 @@ build_coal_tree(samp_t, n_samp, coal_t, node_name_prefix = "N")
 \arguments{
 \item{samp_t}{sampling times.}
 
+\item{n_samp}{a vector containing the numbers of samples taken at corresponding sampling time.}
+
 \item{coal_t}{times of coalescent events / internal nodes.}
+
+\item{node_name_prefix}{Prefix given to node names.}
 }
 \value{
 an ape phylogeny with appropriate times

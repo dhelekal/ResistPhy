@@ -6,6 +6,15 @@
 \usage{
 compute_At(samp_times, n_samp, coal_times, t_max)
 }
+\arguments{
+\item{samp_times}{a vector of sampling times}
+
+\item{n_samp}{a vector containing the numbers of samples taken at corresponding sampling time}
+
+\item{coal_times}{vector of coalescent times}
+
+\item{t_max}{maximum time}
+}
 \description{
 Compute A(t), lineages through time
 }

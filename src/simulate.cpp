@@ -5,6 +5,15 @@
 using namespace Rcpp;
 
 //' Simulate SIS epidemic process
+//' @param u0 Vector u0
+//' @param usage_vals Vector of usage values
+//' @param beta_vals Vector of beta values
+//' @param times Vector of times
+//' @param gamma_sus Recovery rate for sus
+//' @param gamma_res_u Recovery rate for res untreated
+//' @param gamma_res_t Recovery rate for res treated
+//' @param dt dt
+//' @param N N
 // [[Rcpp::export]]
 DataFrame simulate_fast(NumericVector u0,
             NumericVector usage_vals,
@@ -62,6 +71,16 @@ DataFrame simulate_fast(NumericVector u0,
 }
 
 //' Simulate SIS epidemic process
+//' @param n_strains Number of strains
+//' @param I0 Vector of initial infecteds
+//' @param S0 Initial susceptibles
+//' @param usage_vals Vector of usage values
+//' @param beta_vals Vector of beta values
+//' @param N_vals Vector N_vals
+//' @param gamma_u recovery rates when not treated with ABX of interest
+//' @param gamma_t recovery rates when treated with ABX of interest
+//' @param times Vector of times
+//' @param dt dt
 // [[Rcpp::export]]
 DataFrame simulate_fast_nstrain(
             int n_strains,
@@ -157,6 +176,13 @@ DataFrame simulate_fast_nstrain(
 
 
 //' Simulate coalescent tree using thinning
+//' @param samp_times a vector of sampling times
+//' @param n_samp a vector containing the numbers of samples taken at corresponding sampling time.
+//' @param Ne_vals a vector of Ne(t) values.
+//' @param Ne_times a vector of time points corresponding to Ne(t) values.
+//' @param samp_total samp_total
+//' @param dt dt
+//' @param n n
 // [[Rcpp::export]]
 NumericVector sim_coal_fast(NumericVector samp_times,
             IntegerVector n_samp,

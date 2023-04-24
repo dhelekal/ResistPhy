@@ -8,6 +8,8 @@ plot_qpairs(o, ...)
 }
 \arguments{
 \item{o}{costsFit2 object}
+
+\item{...}{Additional parameters}
 }
 \description{
 Plot q parameter marginals for all resistant strains

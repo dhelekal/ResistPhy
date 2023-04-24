@@ -1,9 +1,9 @@
 #' Simulate coalescent process times using Poisson Process Thinning
 #' Note: Ne function is interpolated as a step function
-#' @param samp_t a vector ofsampling times
+#' @param samp_t a vector of sampling times
 #' @param n_samp a vector containing the numbers of samples taken at corresponding sampling time.
 #' @param Ne_vals a vector of Ne(t) values.
-#' @param Ne_vals a vector of time points corresponding to Ne(t) values.
+#' @param Ne_times a vector of time points corresponding to Ne(t) values.
 #' @export
 sim_coal <- function(samp_t, n_samp, Ne_vals, Ne_times) {
     n <- length(Ne_times)
@@ -17,7 +17,9 @@ sim_coal <- function(samp_t, n_samp, Ne_vals, Ne_times) {
 #' Generate a Newick string representation of a tree corresponding to a realisation of a coalescent process.
 #' Note: the topology is RANDOM, If you wish for the topology to be consistent, use set.seed before calling this function.
 #' @param samp_t sampling times.
+#' @param n_samp a vector containing the numbers of samples taken at corresponding sampling time.
 #' @param coal_t times of coalescent events / internal nodes.
+#' @param node_name_prefix Prefix given to node names.
 #' @return an ape phylogeny with appropriate times
 #' @export
 build_coal_tree <- function(samp_t, n_samp, coal_t, node_name_prefix="N") {
