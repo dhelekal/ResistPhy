@@ -1,5 +1,5 @@
 ---
-title: "Ngono Cost of Resistance"
+title: "N. gono Cost of Resistance"
 output: rmarkdown::html_document
 ---
 
@@ -84,7 +84,7 @@ p <- ggtree(tr_r, mrsd=paste0(mrsd_full,"-01-01")) +
             label = name, 
             color = name
         ),
-        fontsize = 3,
+        fontsize = 4,
         angle=90,
         align = TRUE,
         vjust = 0.0,
@@ -218,7 +218,7 @@ Plot usage data, plot individual areas for AMRs that the lineages carry resistan
 ```{r, out.width="100%", eval=T}
 p <- ggplot(fq_df, aes(x=year, y=usage, fill=factor(abx, levels=rev(c("Fluoroquinolones", "Penicillins","Tetracyclines", "Cephalosporins", "Azithromycin", "Other"))))) +
     geom_area() +
-    scale_x_continuous(breaks = seq(pl_begin, t_end, by =1)) + 
+    scale_x_continuous(breaks = seq(pl_begin+1, t_end, by =2)) + 
     labs(x="Year", y="Average Usage as Proportion of Primary Treatment") +
     guides(fill = guide_legend(title="Antimicrobial",reverse=F)) +
     scale_fill_viridis(discrete=T) +
@@ -226,10 +226,10 @@ p <- ggplot(fq_df, aes(x=year, y=usage, fill=factor(abx, levels=rev(c("Fluoroqui
     geom_vline(xintercept=1995, linetype="longdash", color="gray70",alpha=.8)+
     geom_text(aes(x=1995, label="\nAnalysis Start Date", y=40), size=rel(4.0), colour="gray70", alpha=.8, angle=90)+
     theme_minimal() +
-    theme(axis.text.x=element_text(size=rel(0.7), angle = 45, vjust=0.5, hjust=0.5),
-        axis.text.y=element_text(size=rel(0.7), hjust=1),
-        axis.title.y=element_text(size=rel(0.6)),
-        axis.title.x=element_text(size=rel(0.6)),
+    theme(axis.text.x=element_text(size=rel(0.9), angle = 45, vjust=0.5, hjust=0.6),
+        axis.text.y=element_text(size=rel(0.9), hjust=1),
+        axis.title.y=element_text(size=rel(0.9)),
+        axis.title.x=element_text(size=rel(0.9)),
         aspect.ratio=1,
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
@@ -246,7 +246,7 @@ pl1 <- h1 + annotation_custom(
     ymin = 190,
     ymax = 410)
 
-pdf("Figures/gono_data.pdf",6,6)
+pdf("Figures/gono_data.pdf",8,8)
 pl1
 dev.off()
 ```
@@ -282,11 +282,10 @@ out <- infer_costs2(list(sus_tr, res_tr_1, res_tr_2),
                     time_scale,
                     n_iter=2000, 
                     n_warmup=2000,
-                    model="deterministic",
                     K=60,
                     L=6.5,
                     seed=1345678,
-                    gamma_log_sd = 0.1,
+                    gamma_log_sd = 0.3,
                     stan_control=list(adapt_delta=.99,
                         max_treedepth=13,
                         parallel_chains=4,
@@ -300,7 +299,7 @@ Load existing analysis result
 out <- readRDS("~/gono_90s.rds")
 ```
 Check convergence
-```{r, eval =T}
+```{r, eval=T}
 print(out$converged)
 ```
 

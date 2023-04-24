@@ -8,7 +8,8 @@ costs_fit2 <- function(fit,
     gamma_guess, 
     gamma_log_sd, 
     n_iter, 
-    n_warmup) {
+    n_warmup,
+    model) {
 
     draws_a <- as_draws_array(fit$draws())
     ddf <- as.data.frame(as_draws_df(fit$draws()))
@@ -17,12 +18,16 @@ costs_fit2 <- function(fit,
     sampler_diagnostics <- fit$sampler_diagnostics()
     sampler_diagnostics <- as_draws_df(sampler_diagnostics)
 
-    fit_summary <- fit$summary(c("alpha", 
-                        "rho", 
-                        "f_tilde", 
-                        "gamma_sus_tilde",
-                        "q_tilde", 
-                        "I_0_hat"))
+    if (model == "nodecay") {
+        fit_summary <- fit$summary(c("alpha", 
+                            "rho", 
+                            "f_tilde", 
+                            "gamma_sus_tilde",
+                            "q_tilde", 
+                            "I_0_hat"))
+    }  else {
+        stop("Unsupported model")
+    }
 
     converged <- TRUE
     ess_bulk <- fit_summary$ess_bulk
@@ -56,7 +61,7 @@ costs_fit2 <- function(fit,
         n_iter=n_iter,
         n_warmup=n_warmup,
         stan_fit=fit,
-
+        model=model,
         converged=converged
     )
 
@@ -65,22 +70,25 @@ costs_fit2 <- function(fit,
 }
 
 #' Print fit summary
-#' @param o costsFit2 object
+#' @param x costsFit2 object
 #' @export
-print.costsFit2 <- function (o, ...) {
+print.costsFit2 <- function (x, ...) {
     cat(paste("\nResistPhy NUTS posterior fit\n\n"))  
-    cat(paste("\nFields: ",  names(o), "\n"))
-    cat(paste("\nNumber of strains: ", o$n_lineages))
-    cat(paste("\nNumber of iterations: ", o$n_iter))
-    cat(paste("\nNumber of warmup iterations: ", o$n_warmup,"\n"))
-    cat(paste("\nConvergence: ", o$converged,"\n"))
+    cat(paste("\nFields: ",  names(x), "\n"))
+    cat(paste("\nNumber of strains: ", x$n_lineages))
+    cat(paste("\nNumber of iterations: ", x$n_iter))
+    cat(paste("\nNumber of warmup iterations: ", x$n_warmup,"\n"))
+    cat(paste("\nConvergence: ", x$converged,"\n"))
 }
 
 #' Plot traces for a subset of parameters using bayesplot
 #' @param o costsFit2 object
 #' @export
 plot_traces <- function(o, ...) {
-    mcmc_trace(o$draws_arr, pars = c("alpha", "rho", "gamma_sus_tilde"), regex_pars=c("I_0_hat.*", "q_tilde.*"),
+
+    rp <- c("I_0_hat.*", "q_tilde.*")
+
+    mcmc_trace(o$draws_arr, pars = c("alpha", "rho", "gamma_sus_tilde"), regex_pars=rp,
            facet_args = list(ncol = 1, strip.position = "left"))
 }
 
@@ -122,21 +130,23 @@ plot_epi_pairs <- function(o, res_lineage_idx, ...) {
     q_u_name <- paste0("q_u[",res_lineage_idx,"]")
     q_t_name <- paste0("q_t[",res_lineage_idx,"]")
 
+    sc = o$time_scale
+
     gamma_sus_hist <- ggplot(o$draws_df, aes_(x=as.name("gamma_sus"))) + 
         geom_histogram(aes(y = ..density..), position="identity", bins=50, fill="lightsteelblue3") + 
-        geom_function(fun = function(x) dlnorm(x, meanlog = log(o$gamma_guess), sdlog = o$gamma_log_sd), linetype="longdash", color="steelblue4") + 
+        geom_function(fun = function(x) dlnorm(x, meanlog = log(o$gamma_guess*sc), sdlog = o$gamma_log_sd), linetype="longdash", color="steelblue4") + 
         labs(x="", y="", title=TeX("$\\gamma$")) +
         theme_minimal() + thm1()
 
 
     q_u_hist <- ggplot(o$draws_df, aes_(x=as.name(q_u_name))) + 
                         geom_histogram(aes(y = ..density..), position="identity", bins=50, fill="lightsteelblue3") + 
-                        geom_function(fun = function(x) dlnorm(x, meanlog = 0, sdlog = 0.5), linetype="longdash", color="steelblue4") + 
+                        geom_function(fun = function(x) dnorm(x, mean = 0, sd = 0.3 * o$gamma_guess * sc), linetype="longdash", color="steelblue4") + 
                         labs(x="", y="", title=TeX(paste0("$",q_u_name,"$"))) +
                         theme_minimal() + thm1()
     q_t_hist <- ggplot(o$draws_df, aes_(x=as.name(q_t_name))) + 
                         geom_histogram(aes(y = ..density..), position="identity", bins=50, fill="lightsteelblue3") + 
-                        geom_function(fun = function(x) dlnorm(x, meanlog = 0, sdlog = 0.5), linetype="longdash", color="steelblue4") + 
+                        geom_function(fun = function(x) dnorm(x, mean = 0, sd = 0.3 * o$gamma_guess * sc), linetype="longdash", color="steelblue4") + 
                         labs(x="", y="", title=TeX(paste0("$",q_t_name,"$"))) +
                         theme_minimal() + thm1()
 
@@ -234,32 +244,32 @@ plot_Ne <- function(o,  lineage_index, n_draws=40, ...) {
     plot_timeseries(o, lineage_index, ts, I_names, ytitle, n_draws)
 }
 
-#' Plot R(t) credible intervals and posterior draws
+#' Plot growth rate r(t) credible intervals and posterior draws
 #' @param o costsFit2 object
 #' @param lineage_index index of lineage to display, '1' indicates susceptible
-#' @param n_draws Number of posterior R(t) draws to sample
+#' @param n_draws Number of posterior r(t) draws to sample
 #' @export
 plot_rt <- function(o, lineage_index, n_draws=40, ...) {
     ts <- o$time_vecs[[lineage_index]]
     
     lineage_indices <- c(o$idx_begin[lineage_index]:o$idx_end[lineage_index])
-    I_names <- sapply(lineage_indices,function(i) paste0("R_t[",i,"]"))
-    ytitle <- "R(t)"
+    I_names <- sapply(lineage_indices,function(i) paste0("r_t[",i,"]"))
+    ytitle <- "r(t)"
     plot_timeseries(o, lineage_index, ts, I_names, ytitle, n_draws)
 }
 
 #' Plot Rt_res / Rt_sus ratio posterior probability curve for a given threshold
-#' @description f(U) = P[Rt_res / Rt_sus < c | u(t) = U]
+#' @description f(U) = P[rt_sus - rt_res > c | u(t) = U]
 #' @param o costsFit2 object
 #' @param res_lineage_idx index of resistant lineage to display
 #' @param rr_threshold r_t ratio for which to plot the curve
 #' @param n_breaks number of usage discretisation breaks
 #' @export
-plot_rr_curve <- function(o, res_lineage_idx, rr_threshold=1.0, n_breaks = 100) {
+plot_rr_curve <- function(o, res_lineage_idx, rr_threshold=0.0, n_breaks = 100) {
     q_names <- paste0(c("q_u[", "q_t["), res_lineage_idx, "]")
     q_df <- o$draws_df[,q_names]
     n_samp <- nrow(q_df)
-    usage_thresholds <-  apply(q_df, 1, function(x) (1.0/rr_threshold - x[1])/(x[2]-x[1]))
+    usage_thresholds <-  apply(q_df, 1, function(x) (rr_threshold - x[1])/(x[2]-x[1]))
     usage_breaks <- seq(from=0, to=1, length.out=n_breaks)
     probs <- sapply(usage_breaks, function(x) length(which(usage_thresholds > x))/n_samp)
 
@@ -267,13 +277,13 @@ plot_rr_curve <- function(o, res_lineage_idx, rr_threshold=1.0, n_breaks = 100) 
 
     ggplot(p_df) + 
     geom_step(aes(x=usage, y=prob), fill="lightsteelblue3", color="lightsteelblue3") +
-    labs(x="Usage", y="Posterior Probability", title=TeX(sprintf("Posterior Probability of $R_r(t)/R_s(t) < %.2f$", rr_threshold))) +
+    labs(x="Usage", y="Posterior Probability", title=TeX(sprintf("Posterior Probability of $r_r(t) - r_s(t) < %.2f$", rr_threshold))) +
     theme_minimal() +
     thm3(aspect.ratio=1) 
 }
 
-#' Plot Rt_res / Rt_sus ratio posterior probability heatmap
-#' @description f(U, c) = P[Rt_res / Rt_sus < c | u(t) = U]
+#' Plot rt_sus - rt_res difference posterior probability heatmap
+#' @description f(U, c) = P[rt_sus - rt_res > c | u(t) = U]
 #' @param o costsFit2 object
 #' @param res_lineage_idx index of resistant lineage to display
 #' @param n_breaks number of usage discretisation breaks
@@ -284,18 +294,18 @@ plot_rr_map <- function(o, res_lineage_idx, n_breaks = 100, min_disp_prob=0.5) {
     q_df <- o$draws_df[,q_names]
     n_samp <- nrow(q_df)
     usage_breaks <- seq(from=0, to=1, length.out=n_breaks)
-    min_rr <- 1/max(q_df$q_u, q_df$q_t)
+    max_cost <- max(q_df$q_u)
 
-    if (min_rr >= 1) {
-         warning("Posterior Ratio of R(t) never drops below 1, the analysis may be invalid.")
-         stop("Cannot plot usage heatmap.")
+    if (max_cost <= 0) {
+         warning("Posterior difference between resistant and susceptible growth rates r(t) never drops below 0.
+            This suggests no transmission cost to resistance")
     }
 
-    rr_breaks <- seq(from=min_rr, to = 1, length.out = n_breaks)
+    rr_breaks <- seq(from = 0, to = max_cost, length.out = n_breaks)
     p_df <- data.frame(prob=c(), usage=c(), rr=c())
 
     for (rr in rr_breaks) {
-        usage_thresholds <-  apply(q_df, 1, function(x) (1.0/rr - x[1])/(x[2]-x[1]))
+        usage_thresholds <-  apply(q_df, 1, function(x) (rr - x[1])/(x[2]-x[1]))
         probs <- sapply(usage_breaks, function(x) length(which(usage_thresholds > x))/n_samp)
         tmp_df <- data.frame(prob = probs, usage=usage_breaks, rr=rr)
         p_df <- rbind(p_df, tmp_df)
@@ -310,7 +320,7 @@ plot_rr_map <- function(o, res_lineage_idx, n_breaks = 100, min_disp_prob=0.5) {
     geom_contour_filled(aes(x=usage, y=rr, z=prob), breaks=breaks) +
     #geom_tile(aes(x=usage, y=rr, fill=prob)) +
     scale_color_viridis() +
-    labs(x="Usage", y="C", fill="Posterior Probability", title=TeX(sprintf("Posterior Probability of $R_r(t)/R_s(t) < C$ given usage level"))) +
+    labs(x="Usage", y="C", fill="Posterior Probability", title=TeX(sprintf("Posterior Probability of $r_s(t) - r_r(t) > c$ given usage level"))) +
     xlim(0, x_upper) +
     ylim(y_lower, 1) +
     theme_minimal() +
@@ -322,7 +332,7 @@ plot_rr_map <- function(o, res_lineage_idx, n_breaks = 100, min_disp_prob=0.5) {
 #' @param lineage_index index of lineage to display, '1' indicates susceptible
 #' @param n_draws number of trajectories to simulate and overlay
 #' @export
-plot_ppcheck_At <- function(o, lineage_index, n_draws=100, ...) {
+plot_ppcheck_At <- function(o, lineage_index, n_draws=40, ...) {
     ts <- o$time_vecs[[lineage_index]]
     t_max <- max(ts)-min(ts)
     n <- length(ts)
@@ -340,9 +350,10 @@ plot_ppcheck_At <- function(o, lineage_index, n_draws=100, ...) {
 
     data_df <- compute_At(phy$samp_times, phy$n_samp, phy$coal_times, t_max)
 
-    ggplot(pp_df) + geom_step(aes(x=t, y=At, group=draw), alpha=0.1, color="gray", size=0.2) + 
+    ggplot(pp_df) + geom_step(aes(x=t, y=At, group=draw, color=draw), alpha=0.3, color="gray", size=0.4) + 
                     geom_step(data=data_df, aes(x=t, y=At), color="black", size=0.7, linetype="dashed") +
                     labs(x="Time", y="A(t)") + 
+                    scale_color_brewer("PuBu")+
                     scale_y_log10() + 
                     theme_minimal() + 
                     thm3()

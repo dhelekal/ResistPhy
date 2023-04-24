@@ -35,15 +35,15 @@ source("simu_phylo.R")
 ```
 ## Set simulation parameters and simulate phylogenies
 ```{r}
-q_u <- 1.25
-q_t <- 0.45
+q_u <- 1.2
+q_t <- -2.7
 
 n_tip <- 200
 
 gamma_sus <- 1/60.0*365.0
 
-gamma_res_u <- gamma_sus*q_u
-gamma_res_t <- gamma_sus*q_t
+gamma_res_u <- gamma_sus + q_u
+gamma_res_t <- gamma_sus + q_t
 
 t0 <- min(usage_df$time)
 tmax <- max(usage_df$time)
@@ -133,14 +133,13 @@ out <- infer_costs2(phys,
                     usage_df$time,
                     t0,
                     tmax,
-                    gamma_sus/365,
+                    1/60.0,
                     365,
                     n_iter=2000, 
                     n_warmup=2000,
-                    model="deterministic",
                     K=60,
                     L=6.5,
-                    gamma_log_sd=0.1,
+                    gamma_log_sd=0.3,
                     stan_control=list(adapt_delta=.99,
                         max_treedepth=13,
                         parallel_chains=4,

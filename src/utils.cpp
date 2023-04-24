@@ -24,26 +24,26 @@ DataFrame compute_At(NumericVector samp_times,
         double prev_val = lin_count;
         if ((s_idx < samp_times.length()) && 
             (c_idx < coal_times.length()) && 
-            (samp_times[s_idx] <= coal_times[c_idx])) {
+            (samp_times.at(s_idx) <= coal_times.at(c_idx))) {
             
-            next_t = samp_times[s_idx];
-            lin_count += n_samp[s_idx];
+            next_t = samp_times.at(s_idx);
+            lin_count += n_samp.at(s_idx);
             s_idx++;
         } else if ((s_idx < samp_times.length()) && 
                 (c_idx < coal_times.length()) && 
-                (samp_times[s_idx] > coal_times[c_idx])) {
+                (samp_times.at(s_idx) > coal_times.at(c_idx))) {
             
-            next_t = coal_times[c_idx];
+            next_t = coal_times.at(c_idx);
             lin_count -= 1;
             c_idx++;
         } else if (s_idx < samp_times.length()) {
 
-            next_t = samp_times[s_idx];
-            lin_count += n_samp[s_idx];
+            next_t = samp_times.at(s_idx);
+            lin_count += n_samp.at(s_idx);
             s_idx++;
         } else {
 
-            next_t = coal_times[c_idx];
+            next_t = coal_times.at(c_idx);
             lin_count -= 1;
             c_idx++; 
         }

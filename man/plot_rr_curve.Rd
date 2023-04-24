@@ -4,7 +4,7 @@
 \alias{plot_rr_curve}
 \title{Plot Rt_res / Rt_sus ratio posterior probability curve for a given threshold}
 \usage{
-plot_rr_curve(o, res_lineage_idx, rr_threshold = 1, n_breaks = 100)
+plot_rr_curve(o, res_lineage_idx, rr_threshold = 0, n_breaks = 100)
 }
 \arguments{
 \item{o}{costsFit2 object}
@@ -16,5 +16,5 @@ plot_rr_curve(o, res_lineage_idx, rr_threshold = 1, n_breaks = 100)
 \item{n_breaks}{number of usage discretisation breaks}
 }
 \description{
-f(U) = P[Rt_res / Rt_sus < c | u(t) = U]
+f(U) = P[rt_sus - rt_res > c | u(t) = U]
 }

@@ -35,37 +35,39 @@ thm2 <- function() {
     return(thm2)
 }
 
-blank <- plot_spacer()
+blank <- plot_spacer()    
+sc <- out$time_scale
+
 
 gamma_sus_hist <- ggplot(out$draws_df, aes(x=gamma_sus)) + 
                     geom_histogram(aes(y = ..density..), position="identity", bins=30, fill="lightsteelblue3") + 
-                    geom_function(fun = function(x) dlnorm(x, meanlog = log(out$gamma_guess), sdlog = out$gamma_log_sd), linetype="longdash", color="steelblue4") + 
+                    geom_function(fun = function(x) dlnorm(x, meanlog = log(out$gamma_guess*sc), sdlog = out$gamma_log_sd), linetype="longdash", color="steelblue4") + 
                     labs(x="", y="", title=TeX("$\\gamma$")) +
-                    geom_vline(xintercept=gamma_sus/365.0,color="red")+
+                    geom_vline(xintercept=gamma_sus,color="red")+
                     theme_minimal() + thm1()
 q_u_hist <- ggplot(out$draws_df, aes_(x=as.name("q_u[1]"))) + 
                     geom_histogram(aes(y = ..density..), position="identity", bins=30, fill="lightsteelblue3") + 
-                    geom_function(fun = function(x) dlnorm(x, meanlog = 0, sdlog = 0.5), linetype="longdash", color="steelblue4") + 
+                    geom_function(fun = function(x) dnorm(x, mean = 0, sd = 0.3 * out$gamma_guess * sc), linetype="longdash", color="steelblue4") + 
                     labs(x="", y="", title=TeX("$q_U$")) +
                     geom_vline(xintercept=q_u,color="red")+
                     theme_minimal() + thm1()
 q_t_hist <- ggplot(out$draws_df, aes_(x=as.name("q_t[1]"))) + 
                     geom_histogram(aes(y = ..density..), position="identity", bins=30, fill="lightsteelblue3") + 
-                    geom_function(fun = function(x) dlnorm(x, meanlog = 0, sdlog = 0.5), linetype="longdash", color="steelblue4") + 
+                    geom_function(fun = function(x) dnorm(x, mean = 0, sd = 0.3 * out$gamma_guess * sc), linetype="longdash", color="steelblue4") + 
                     labs(x="", y="", title=TeX("$q_T$")) +
                     geom_vline(xintercept=q_t,color="red")+
                     theme_minimal() + thm1()
 p1 <- ggplot(out$draws_df, aes_(x=as.name("gamma_sus"), y=as.name("q_u[1]"))) + 
         geom_hex(bins = 20) + 
         scale_fill_viridis() + 
-        geom_vline(xintercept=gamma_sus/365.0,color="red")+
+        geom_vline(xintercept=gamma_sus,color="red")+
         geom_hline(yintercept=q_u,color="red")+
         theme_minimal() +
         thm2()
 p2 <- ggplot(out$draws_df, aes_(x=as.name("gamma_sus"), y=as.name("q_t[1]"))) + 
         geom_hex(bins = 20) + 
         scale_fill_viridis() + 
-        geom_vline(xintercept=gamma_sus/365.0,color="red")+
+        geom_vline(xintercept=gamma_sus,color="red")+
         geom_hline(yintercept=q_t, color="red")+
         theme_minimal() +
         thm2()

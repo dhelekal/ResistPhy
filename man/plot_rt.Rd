@@ -2,7 +2,7 @@
 % Please edit documentation in R/costs_fit2.R
 \name{plot_rt}
 \alias{plot_rt}
-\title{Plot R(t) credible intervals and posterior draws}
+\title{Plot growth rate r(t) credible intervals and posterior draws}
 \usage{
 plot_rt(o, lineage_index, n_draws = 40, ...)
 }
@@ -11,8 +11,8 @@ plot_rt(o, lineage_index, n_draws = 40, ...)
 
 \item{lineage_index}{index of lineage to display, '1' indicates susceptible}
 
-\item{n_draws}{Number of posterior R(t) draws to sample}
+\item{n_draws}{Number of posterior r(t) draws to sample}
 }
 \description{
-Plot R(t) credible intervals and posterior draws
+Plot growth rate r(t) credible intervals and posterior draws
 }

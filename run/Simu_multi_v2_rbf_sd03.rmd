@@ -1,0 +1,81 @@
+---
+title: "Simulation + Inference: 20 runs"
+output: rmarkdown::html_document
+---
+
+```{r, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(tibble.print_min = 4, tibble.print_max = 4)
+```
+
+```{r}
+set.seed(3)
+library(ggplot2)
+library(reshape2)
+library(viridis)
+library(ResistPhy)
+library(ape)
+library(latex2exp)
+```
+
+## Simulation function 
+```{r}
+source("sim_traj.R")
+```
+## Generate recovery parameter set
+```{r, out.width="100%", dpi=300, fig.align="center"}
+n_runs <- 50
+sim_out <- sim_n_traj(idx_begin=1, extent=50, n_runs=n_runs, plot_traj=TRUE)
+
+sim_out$tplt
+pdf("Figures/sims_large_200.pdf",16,16)
+sim_out$tplt
+dev.off()
+```
+
+# Read Results
+
+```{r, eval=T}
+par_files <- list.files(pattern="det_para.*sd03\\.rds")
+conv_files <- list.files(pattern="det_conv.*sd03\\.rds")
+
+recovery_data <- do.call(rbind, lapply(par_files, readRDS))
+conv_data <- do.call(c, lapply(conv_files, readRDS))
+```
+
+```{r, eval=T}
+print(conv_data)
+```
+
+# Plot
+```{r, out.width="100%", dpi=300, fig.align="center", eval=T}
+gt_df <- melt(data.frame(q_u=sim_out$q_u, q_t=sim_out$q_t, para_idx = c(1:n_runs)), measure.vars=c("q_u", "q_t"), 
+                variable.name="variable", value.name="value")
+iplt <- ggplot(recovery_data) + 
+    geom_pointrange(mapping = aes(x = para_idx, y = value, color=variable, group=variable),
+                  stat = "summary",
+                  fun.min = function(z) {quantile(z,0.025)},
+                  fun.max = function(z) {quantile(z,0.975)},
+                  fun = median) +
+    geom_line(data=gt_df, aes(x=para_idx, y = value, color=variable, group=variable), linetype="longdash") +
+    labs(x="Simulation", y="Value", color="Variable") +
+    scale_colour_manual(
+        values = c("lightsteelblue4", "lightsteelblue1"),
+        breaks = c("q_t", "q_u"),
+        labels = c(TeX("$\\q_t$"), TeX("$\\q_u$"))) +
+    theme_minimal() +
+    theme(axis.text.x=element_text(size=rel(1.5)),
+        axis.text.y=element_text(size=rel(1.5)),
+        aspect.ratio=1,
+        plot.margin = margin(0.2, 0.2, 0.2, 0.2, "cm"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(size=rel(0.2), colour = "grey90"),
+        plot.title = element_text(hjust = 0.5,size=rel(1.0)))
+
+iplt
+
+pdf("Figures/recovery_large_sd03.pdf", 6,6)
+iplt
+dev.off()
+```
