@@ -14,7 +14,7 @@ source("sim_traj.R")
 # test if there is at least one argument: if not, return an error
 args <- commandArgs(TRUE)
 print(args)
-if (length(args)!=3) {
+if (length(args)!=2) {
   stop("Need 3 arguments.", call.=FALSE)
 }
 
